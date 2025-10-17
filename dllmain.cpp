@@ -1246,12 +1246,12 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
 
     //mode
     int InitialMode = GetPrivateProfileIntW(iniSettings.c_str(), L"Initial Mode", 1, iniPath.c_str());
-    int Modechange = GetPrivateProfileIntW(iniSettings.c_str(), L"Allow modechange", 1, iniPath.c_str());
+    int Modechange = GetPrivateProfileIntW(iniSettings.c_str(), L"Allow modechange", 0, iniPath.c_str());
 
     int sendfocus = GetPrivateProfileIntW(iniSettings.c_str(), L"Sendfocus", 0, iniPath.c_str());
     int responsetime = GetPrivateProfileIntW(iniSettings.c_str(), L"Responsetime", 0, iniPath.c_str());
     int doubleclicks = GetPrivateProfileIntW(iniSettings.c_str(), L"Doubleclicks", 0, iniPath.c_str());
-    int scrollenddelay = GetPrivateProfileIntW(iniSettings.c_str(), L"DelayEndScroll", 50, iniPath.c_str());
+    int scrollenddelay = GetPrivateProfileIntW(iniSettings.c_str(), L"DelayEndScroll", 0, iniPath.c_str());
     int quickMW = GetPrivateProfileIntW(iniSettings.c_str(), L"MouseWheelContinous", 1, iniPath.c_str());
 
     //clicknotmove 2
@@ -1276,7 +1276,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     userealmouse = GetPrivateProfileIntW(iniSettings.c_str(), L"UseRealMouse", 0, iniPath.c_str());   //scrolloutsidewindow
     ignorerect = GetPrivateProfileIntW(iniSettings.c_str(), L"IgnoreRect", 0, iniPath.c_str());
 
-    int scrolloutsidewindow = GetPrivateProfileIntW(iniSettings.c_str(), L"Scrollmapfix", 1, iniPath.c_str());   //scrolloutsidewindow
+    int scrolloutsidewindow = GetPrivateProfileIntW(iniSettings.c_str(), L"Scrollmapfix", 4, iniPath.c_str());   //scrolloutsidewindow
 
     EnterCriticalSection(&deltaLock);
     keytodinput[0] = DIKcodes(Atype);
