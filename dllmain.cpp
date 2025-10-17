@@ -21,7 +21,7 @@
 #include <windows.h>
 #include <algorithm>
 //#include <windowsx.h>
-#include "MinHook.h"
+
 #include <Xinput.h>
 #include <tlhelp32.h>
 #include <tchar.h>
@@ -122,6 +122,7 @@ int alwaysdrawcursor = 0; //always draw cursor even if setcursor set cursor NULL
 HICON hCursor = 0;
 DWORD lastClickTime;
 
+WORD vibrator = 0;
 //mousemove calc
 // #define DEADZONE 8000
 // #define MAX_SPEED 30.0f        // Maximum pixels per poll
@@ -529,51 +530,6 @@ bool Mutexlock(bool lock) {
     return true;
 }
 
-void SetupHook() {
-    if (MH_Initialize() != MH_OK) {
-        MessageBox(NULL, L"Failed to initialize MinHook", L"Error", MB_OK | MB_ICONERROR);
-        return;
-    }
-
-    //each of there hooks have a high chance of crashing the game
-
-    if (getcursorposhook == 1) {
-        MH_CreateHookApi(L"user32", "GetCursorPos", &MyGetCursorPos, reinterpret_cast<LPVOID*>(&fpGetCursorPos));
-        MH_EnableHook(&GetCursorPos);
-    }
-    if (setcursorposhook == 1) {
-        MH_CreateHook(&SetCursorPos, &MySetCursorPos, reinterpret_cast<LPVOID*>(&fpSetCursorPos));
-        MH_EnableHook(&SetCursorPos);
-    }
-    if (getkeystatehook == 1) {
-        MH_CreateHook(&GetAsyncKeyState, &HookedGetAsyncKeyState, reinterpret_cast<LPVOID*>(&fpGetAsyncKeyState));
-        MH_EnableHook(&GetAsyncKeyState);
-    }
-    if (getasynckeystatehook == 1) {
-        MH_CreateHook(&GetKeyState, &HookedGetKeyState, reinterpret_cast<LPVOID*>(&fpGetKeyState));
-        MH_EnableHook(&GetKeyState);
-    }
-    if (clipcursorhook == 1) {
-        MH_CreateHook(&ClipCursor, &HookedClipCursor, reinterpret_cast<LPVOID*>(&fpClipCursor));
-        MH_EnableHook(&ClipCursor);
-    }
-    if (setrecthook == 1) {
-        MH_CreateHook(&SetRect, &HookedSetRect, reinterpret_cast<LPVOID*>(&fpSetRect));
-        MH_EnableHook(&SetRect);
-
-        MH_CreateHook(&AdjustWindowRect, &HookedAdjustWindowRect, reinterpret_cast<LPVOID*>(&fpAdjustWindowRect));
-        MH_EnableHook(&AdjustWindowRect);
-    }
-    if (setcursorhook == 1)
-    {
-        MH_CreateHook(&SetCursor, &HookedSetCursor, reinterpret_cast<LPVOID*>(&fpSetCursor));
-        MH_EnableHook(&SetCursor);
-    }
-    //MessageBox(NULL, "Bmp + last setcursor. done", "other search", MB_OK | MB_ICONINFORMATION);
-    hooksinited = true;
-    //MH_EnableHook(MH_ALL_HOOKS);
-}
-
 
 void vibrateController(int controllerId, WORD strength)
 {
@@ -581,217 +537,61 @@ void vibrateController(int controllerId, WORD strength)
     vibration.wLeftMotorSpeed = strength;   // range: 0 - 65535
     vibration.wRightMotorSpeed = strength;
 
-    // Activate vibration
-    XInputSetState(controllerId, &vibration);
-
-    // Keep vibration on for 1 second
-    Sleep(50); // milliseconds
-
-    // Stop vibration
-    vibration.wLeftMotorSpeed = 0;
-    vibration.wRightMotorSpeed = 0;
     XInputSetState(controllerId, &vibration);
 }
 
 bool SendMouseClick(int x, int y, int z, int many) {
     // Create a named mutex
 
-    if (userealmouse == 0)
-    {
-        POINT heer;
-        heer.x = x;
-        heer.y = y;
-        ScreenToClient(hwnd, &heer);
-        LPARAM clickPos = MAKELPARAM(heer.x, heer.y);
+
         if (z == 1) {
 
             EnterCriticalSection(&deltaLock);
-            PostMessage(hwnd, WM_LBUTTONDOWN, MK_LBUTTON, clickPos);
             Dmousehilo[0] = true;
             LeaveCriticalSection(&deltaLock);
-                Sleep(1);
-                EnterCriticalSection(&deltaLock);
-                Dmousehilo[0] = false;
-                LeaveCriticalSection(&deltaLock);
-            PostMessage(hwnd, WM_LBUTTONUP, 0, clickPos);
-            
-            
-            keystatesend = VK_LEFT;
+            Sleep(1);
+            EnterCriticalSection(&deltaLock);
+            Dmousehilo[0] = false;
+            LeaveCriticalSection(&deltaLock);
         }
         if (z == 2) {
             EnterCriticalSection(&deltaLock);
-            PostMessage(hwnd, WM_RBUTTONDOWN, MK_RBUTTON, clickPos);
             Dmousehilo[1] = true;
             LeaveCriticalSection(&deltaLock);
             Sleep(1);
             EnterCriticalSection(&deltaLock);
             Dmousehilo[1] = false;
             LeaveCriticalSection(&deltaLock);
-            PostMessage(hwnd, WM_RBUTTONUP, 0, clickPos);
         }
         if (z == 3) {
-            PostMessage(hwnd, WM_LBUTTONDOWN, MK_LBUTTON, clickPos);
-            keystatesend = VK_LEFT;
             EnterCriticalSection(&deltaLock);
             Dmousehilo[0] = true;
             LeaveCriticalSection(&deltaLock);
         }
         if (z == 4)
         {
-            PostMessage(hwnd, WM_LBUTTONUP, 0, clickPos);
             EnterCriticalSection(&deltaLock);
             Dmousehilo[0] = false;
             LeaveCriticalSection(&deltaLock);
 
         }
         if (z == 5) {
-            PostMessage(hwnd, WM_RBUTTONDOWN, MK_RBUTTON, clickPos);
-            keystatesend = VK_RIGHT;
             EnterCriticalSection(&deltaLock);
             Dmousehilo[1] = true;
             LeaveCriticalSection(&deltaLock);
         }
         if (z == 6)
         {
-            PostMessage(hwnd, WM_RBUTTONUP, 0, clickPos);
             EnterCriticalSection(&deltaLock);
             Dmousehilo[1] = false;
             LeaveCriticalSection(&deltaLock);
 
         }
-        if (z == 20 || z == 21) //WM_LBUTTONDBLCLK
-        {
-            WPARAM wParam = 0;
-            if (z == 20)
-                wParam = MAKEWPARAM(0, -120);
-            if (z == 21)
-                wParam = MAKEWPARAM(0, 120);
-            PostMessage(hwnd, WM_MOUSEWHEEL, wParam, clickPos);
-        }
-        if (z == 30) //WM_LBUTTONDBLCLK
-        {
-            PostMessage(hwnd, WM_LBUTTONDBLCLK, 0, clickPos);
-        }
-        else if (z == 8 || z == 10 || z == 11) //only mousemove
-        {
-            PostMessage(hwnd, WM_MOUSEMOVE, 0, clickPos);
-            //PostMessage(hwnd, WM_SETCURSOR, (WPARAM)hwnd, MAKELPARAM(HTCLIENT, WM_MOUSEMOVE));
-
-        }
         return true;
-    }
-    else if (z == 1 || z == 2 || z == 3 || z == 6 || z == 10)
-    {
-        if (Mutexlock(true)) {
-
-        }
-        else
-        {
-            //errorhandling
-        }
-        // SetForegroundWindow(hwnd);
-
-    }
-    // Convert screen coordinates to absolute values
-    double screenWidth = GetSystemMetrics(SM_CXSCREEN) - 1;
-    double screenHeight = GetSystemMetrics(SM_CYSCREEN) - 1;
-    double fx = x * (65535.0f / screenWidth);
-    double fy = y * (65535.0f / screenHeight);
-
-    INPUT input[3] = {};
-
-    // Move the mouse to the specified position
-    input[0].type = INPUT_MOUSE;
-    input[0].mi.dx = static_cast<LONG>(fx);
-    input[0].mi.dy = static_cast<LONG>(fy);
-    input[0].mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
-    if (z == 1) { //left button press
-        // Simulate mouse left button down
-        input[1].type = INPUT_MOUSE;
-        input[1].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
-        keystatesend = VK_LEFT;
-
-        // Simulate mouse left button up
-        input[2].type = INPUT_MOUSE;
-        input[2].mi.dwFlags = MOUSEEVENTF_LEFTUP;
-    }
-    else if (z == 2) { //right button press
-        // Simulate mouse left button down
-        input[1].type = INPUT_MOUSE;
-        input[1].mi.dwFlags = MOUSEEVENTF_RIGHTDOWN;
-
-        // Simulate mouse left button up
-        input[2].type = INPUT_MOUSE;
-        input[2].mi.dwFlags = MOUSEEVENTF_RIGHTUP;
-    }
-    else if (z == 3)
-    { //right button press, drag and release
-        // Simulate mouse left button down
-        input[1].type = INPUT_MOUSE;
-        input[1].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
-        keystatesend = VK_LEFT;
-    }
-    else if (z == 5)
-    { //right button press, drag and release
-        // Simulate mouse left button up
-        input[1].type = INPUT_MOUSE;
-        input[1].mi.dwFlags = MOUSEEVENTF_LEFTUP;
-
-        input[2].type = INPUT_MOUSE;
-        input[2].mi.dwFlags = MOUSEEVENTF_LEFTUP;
-    }
-    else if (z == 6 || z == 8 || z == 10 || z == 11) //only mousemove but 6 no mutex. only make mutex while 10 both make and release
-    { //right button press, drag and release
-        // Simulate mouse left button down
-    }
-    else if (z == 7)
-    { //right button press, drag and release
-        // Simulate mouse left button up
-        input[1].type = INPUT_MOUSE;
-        input[1].mi.dwFlags = MOUSEEVENTF_RIGHTUP;
-
-        input[2].type = INPUT_MOUSE;
-        input[2].mi.dwFlags = MOUSEEVENTF_RIGHTUP;
-    }
-    else if (z == 4)
-    { //right button press, drag and release
-        // Simulate mouse left button up
-    }
-    //z is 3 or anything just move mouse
-    SendInput(many, input, sizeof(INPUT));
-    if (z == 1 || z == 2 || z == 5 || z == 7 || z == 10 || z == 11)
-    {
-        Mutexlock(false);
-    }
-    return true;
+    
 }
 
 
-
-bool FindSubImage24(
-    const BYTE* largeData, int largeW, int largeH, int strideLarge,
-    const BYTE* smallData, int smallW, int smallH, int strideSmall,
-    POINT& foundAt, int Xstart, int Ystart
-) {
-    for (int y = Ystart; y <= largeH - smallH; ++y) {
-        for (int x = Xstart; x <= largeW - smallW; ++x) {
-            bool match = true;
-            for (int j = 0; j < smallH && match; ++j) {
-                const BYTE* pLarge = largeData + (y + j) * strideLarge + x * 3;
-                const BYTE* pSmall = smallData + j * strideSmall;
-                if (memcmp(pLarge, pSmall, smallW * 3) != 0) {
-                    match = false;
-                }
-            }
-            if (match) {
-                foundAt.x = x;
-                foundAt.y = y;
-                return true;
-            }
-        }
-    }
-    return false;
-}
 HWND GetMainWindowHandle(DWORD targetPID) {
     HWND hwnd = nullptr;
     struct HandleData {
@@ -851,92 +651,6 @@ bool Save24BitBMP(const wchar_t* filename, const BYTE* pixels, int width, int he
 bool IsTriggerPressed(BYTE triggerValue) {
     BYTE threshold = 175;
     return triggerValue > threshold;
-}
-bool LoadBMP24Bit(const wchar_t* filename, std::vector<BYTE>& pixels, int& width, int& height, int& stride) {
-    HBITMAP hbm = (HBITMAP)LoadImageW(NULL, filename, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
-    if (!hbm) return false;
-
-    BITMAP bmp;
-    GetObject(hbm, sizeof(BITMAP), &bmp);
-    width = bmp.bmWidth - 1;
-    height = bmp.bmHeight - 1;
-    stride = CalculateStride(width);
-
-    pixels.resize(stride * height);
-
-    BITMAPINFO bmi = {};
-    bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-    bmi.bmiHeader.biWidth = width;
-    bmi.bmiHeader.biHeight = -height;
-    bmi.bmiHeader.biPlanes = 1;
-    bmi.bmiHeader.biBitCount = 24;
-    bmi.bmiHeader.biCompression = BI_RGB;
-
-    // HDC hdc = GetDC(NULL);
-    HDC hdc = CreateCompatibleDC(NULL);
-    GetDIBits(hdc, hbm, 0, height, pixels.data(), &bmi, DIB_RGB_COLORS);
-    ReleaseDC(NULL, hdc);
-    DeleteObject(hbm);
-    return true;
-}
-
-
-bool SaveWindow10x10BMP(HWND hwnd, const wchar_t* filename, int x, int y) {
-    HDC hdcWindow = GetDC(hwnd);
-    HDC hdcMem = CreateCompatibleDC(hdcWindow);
-
-    // Size: 10x10
-    int width = 10;
-    int height = 10;
-    int stride = ((width * 3 + 3) & ~3);
-    std::vector<BYTE> pixels(stride * height);
-
-    // Create a 24bpp bitmap
-    BITMAPINFO bmi = {};
-    bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-    bmi.bmiHeader.biWidth = width;
-    bmi.bmiHeader.biHeight = -height; // top-down DIB
-    bmi.bmiHeader.biPlanes = 1;
-    bmi.bmiHeader.biBitCount = 24;
-    bmi.bmiHeader.biCompression = BI_RGB;
-
-
-    //stretchblt
-
-    BYTE* pBits = nullptr;
-
-    HBITMAP hbm24 = CreateDIBSection(hdcWindow, &bmi, DIB_RGB_COLORS, (void**)&pBits, 0, 0);
-    if (!hbm24) {
-        DeleteDC(hdcMem);
-        ReleaseDC(hwnd, hdcWindow);
-        return false;
-    }
-
-    HGDIOBJ oldbmp = SelectObject(hdcMem, hbm24);
-
-    BitBlt(hdcMem, 0, 0, width, height, hdcWindow, x, y, SRCCOPY);
-
-    // Prepare to retrieve bits
-    BITMAPINFOHEADER bih = {};
-    bih.biSize = sizeof(BITMAPINFOHEADER);
-    bih.biWidth = width;
-    bih.biHeight = -height; // top-down for easier use
-    bih.biPlanes = 1;
-    bih.biBitCount = 24;
-    bih.biCompression = BI_RGB;
-
-    GetDIBits(hdcMem, hbm24, 0, height, pixels.data(), (BITMAPINFO*)&bih, DIB_RGB_COLORS);
-
-    // Save
-    bool ok = Save24BitBMP(filename, pixels.data(), width, height);
-
-    // Cleanup
-    SelectObject(hdcMem, oldbmp);
-    DeleteObject(hbm24);
-    DeleteDC(hdcMem);
-    ReleaseDC(hwnd, hdcWindow);
-
-    return ok;
 }
 
 HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& pixels, int& strideOut, bool draw) {
@@ -1146,594 +860,6 @@ POINT CalculateUltimateCursorMove(
     return { integerDeltaX, -integerDeltaY };
 }
 
-void PostKeyFunction(HWND hwnd, int keytype, bool press) {
-    DWORD mykey = 0;
-    DWORD presskey = WM_KEYDOWN;
-
-    UINT scanCode = MapVirtualKey(VK_LEFT, MAPVK_VK_TO_VSC);
-    LPARAM lParam = (0x00000001 | (scanCode << 16));
-
-    if (!press) {
-        presskey = WM_KEYUP; // Key up event 
-    }
-
-    //standard keys for dpad
-    if (keytype == -1)
-        mykey = VK_UP;
-    if (keytype == -2)
-        mykey = VK_DOWN;
-    if (keytype == -3)
-        mykey = VK_LEFT;
-    if (keytype == -4)
-        mykey = VK_RIGHT;
-
-    if (keytype == 3)
-        mykey = VK_ESCAPE;
-    if (keytype == 4)
-        mykey = VK_RETURN;
-    if (keytype == 5)
-        mykey = VK_TAB;
-    if (keytype == 6)
-        mykey = VK_SHIFT;
-    if (keytype == 7)
-        mykey = VK_CONTROL;
-    if (keytype == 8)
-        mykey = VK_SPACE;
-
-    if (keytype == 9)
-        mykey = 0x4D; //M
-
-    if (keytype == 10)
-        mykey = 0x57; //W
-
-    if (keytype == 11)
-        mykey = 0x53; //S
-
-    if (keytype == 12)
-        mykey = 0x41; //A
-
-    if (keytype == 13)
-        mykey = 0x44; //D
-
-    if (keytype == 14)
-        mykey = 0x45; //E
-
-    if (keytype == 15)
-        mykey = 0x46; //F
-
-    if (keytype == 16)
-        mykey = 0x47; //G
-
-    if (keytype == 17)
-        mykey = 0x48; //H
-
-    if (keytype == 18)
-        mykey = 0x49; //I
-
-    if (keytype == 19)
-        mykey = 0x51; //Q
-
-    if (keytype == 20)
-        mykey = VK_OEM_PERIOD;
-
-    if (keytype == 21)
-        mykey = 0x52; //R
-
-    if (keytype == 22)
-        mykey = 0x54; //T
-
-    if (keytype == 23)
-        mykey = 0x42; //B
-
-    if (keytype == 24)
-        mykey = 0x43; //C
-
-    if (keytype == 25)
-        mykey = 0x4B; //K
-
-    if (keytype == 26)
-        mykey = 0x55; //U
-
-    if (keytype == 27)
-        mykey = 0x56; //V
-
-    if (keytype == 28)
-        mykey = 0x57; //W
-
-    if (keytype == 30)
-        mykey = 0x30; //0
-
-    if (keytype == 31)
-        mykey = 0x31; //1
-
-    if (keytype == 32)
-        mykey = 0x32; //2
-
-    if (keytype == 33)
-        mykey = 0x33; //3
-
-    if (keytype == 34)
-        mykey = 0x34; //4
-
-    if (keytype == 35)
-        mykey = 0x35; //5
-
-    if (keytype == 36)
-        mykey = 0x36; //6
-
-    if (keytype == 37)
-        mykey = 0x37; //7
-
-    if (keytype == 38)
-        mykey = 0x38; //8
-
-    if (keytype == 39)
-        mykey = 0x39; //9
-
-    if (keytype == 40)
-        mykey = VK_UP;
-
-    if (keytype == 41)
-        mykey = VK_DOWN;
-
-    if (keytype == 42)
-        mykey = VK_LEFT;
-
-    if (keytype == 43)
-        mykey = VK_RIGHT;
-
-    if (keytype == 44)
-        mykey = 0x58; //X
-
-    if (keytype == 45)
-        mykey = 0x5A; //Z
-
-    if (keytype == 20)
-        mykey = VK_OEM_PERIOD;
-
-
-
-    if (keytype == 51)
-        mykey = VK_F1;
-
-    if (keytype == 52)
-        mykey = VK_F2;
-
-    if (keytype == 53)
-        mykey = VK_F3;
-
-    if (keytype == 54)
-        mykey = VK_F4;
-
-    if (keytype == 55)
-        mykey = VK_F5;
-
-    if (keytype == 56)
-        mykey = VK_F6;
-
-    if (keytype == 57)
-        mykey = VK_F7;
-
-    if (keytype == 58)
-        mykey = VK_F8;
-    if (keytype == 59)
-        mykey = VK_F9;
-
-    if (keytype == 60)
-        mykey = VK_F10;
-
-    if (keytype == 61)
-        mykey = VK_F11;
-
-    if (keytype == 62)
-        mykey = VK_F12;
-
-    if (keytype == 63) { //control+C
-        mykey = VK_CONTROL;
-    }
-
-
-    if (keytype == 70)
-        mykey = VK_NUMPAD0;
-
-    if (keytype == 71)
-        mykey = VK_NUMPAD1;
-
-    if (keytype == 72)
-        mykey = VK_NUMPAD2;
-
-    if (keytype == 73)
-        mykey = VK_NUMPAD3;
-
-    if (keytype == 74)
-        mykey = VK_NUMPAD4;
-
-    if (keytype == 75)
-        mykey = VK_NUMPAD5;
-
-    if (keytype == 76)
-        mykey = VK_NUMPAD6;
-
-    if (keytype == 77)
-        mykey = VK_NUMPAD7;
-
-    if (keytype == 78)
-        mykey = VK_NUMPAD8;
-
-    if (keytype == 79)
-        mykey = VK_NUMPAD9;
-
-    if (keytype == 80)
-        mykey = VK_SUBTRACT;
-
-    if (keytype == 81)
-        mykey = VK_ADD;
-
-    keystatesend = mykey;
-    PostMessage(hwnd, presskey, mykey, lParam);
-    PostMessage(hwnd, WM_INPUT, VK_RIGHT, lParam);
-    if (keytype == 63) {
-        PostMessage(hwnd, presskey, 0x43, lParam);
-    }
-    return;
-
-}
-bool Buttonaction(const wchar_t key[3], int mode, int serchnum, int startsearch)
-{
-    if (mode != 2)
-    {
-
-        pausedraw = true;
-        Sleep(25);
-        bool movenotclick = false;
-        bool clicknotmove = false;
-        //int i = startsearch;
-
-        HBITMAP hbmdsktop;
-
-        wchar_t buffer[100];
-        wsprintf(buffer, L"searchnum is %d", serchnum);
-        // MessageBoxA(NULL, buffer, "Info", MB_OK);
-        wsprintf(buffer, L"starting search at %d", startsearch);
-        //MessageBoxA(NULL, buffer, "Info", MB_OK);
-
-        for (int i = startsearch; i < serchnum; i++) //memory problem here somewhere
-        {
-
-            std::wstring wpath = WGetExecutableFolder() + key + std::to_wstring(i) + L".bmp";
-           // std::wstring wpath(path.begin(), path.end());
-
-            if (LoadBMP24Bit(wpath.c_str(), smallPixels, smallW, smallH, strideSmall))
-            {
-                // MessageBox(NULL, "some kind of error", "loaded bmp", MB_OK | MB_ICONINFORMATION);
-                 // Capture screen
-                if (hbmdsktop = CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, false))
-                {
-                    // MessageBox(NULL, "some kind of error", "captured desktop", MB_OK | MB_ICONINFORMATION);
-
-                    POINT pt;
-                    if (FindSubImage24(largePixels.data(), screenSize.cx, screenSize.cy, strideLarge, smallPixels.data(), smallW, smallH, strideSmall, pt, 0, 0))
-                    {
-                        vibrateController(controllerID, 15000);
-                        if (wcscmp(key, L"\\A") == 0) {
-                            if (bmpAtype == 1)
-                            {
-                                movenotclick = true;
-                            }
-                            if (bmpAtype == 2)
-                            {
-                                clicknotmove = true;
-                            }
-                            startsearchA = i + 1;
-                        }
-                        else if (wcscmp(key, L"\\B") == 0) {
-                            if (bmpBtype == 1)
-                            {
-                                movenotclick = true;
-                            }
-                            if (bmpBtype == 2)
-                            {
-                                clicknotmove = true;
-                            }
-                            startsearchB = i + 1;
-                        }
-                        else if (wcscmp(key, L"\\X") == 0) {
-                            if (bmpXtype == 1)
-                            {
-                                movenotclick = true;
-                            }
-                            if (bmpXtype == 2)
-                            {
-                                clicknotmove = true;
-                            }
-                            startsearchX = i + 1;
-                        }
-                        else if (wcscmp(key, L"\\Y") == 0) {
-                            if (bmpYtype == 1)
-                            {
-                                movenotclick = true;
-                            }
-                            if (bmpYtype == 2)
-                            {
-                                clicknotmove = true;
-                            }
-                            startsearchY = i + 1;
-                        }
-                        else if (wcscmp(key, L"\\C") == 0) {
-                            if (bmpCtype == 1)
-                            {
-                                movenotclick = true;
-                            }
-                            if (bmpCtype == 2)
-                            {
-                                clicknotmove = true;
-                            }
-                            startsearchC = i + 1;
-                        }
-                        else if (wcscmp(key, L"\\D") == 0) {
-                            if (bmpDtype == 1)
-                            {
-                                movenotclick = true;
-                            }
-                            if (bmpDtype == 2)
-                            {
-                                clicknotmove = true;
-                            }
-                            startsearchD = i + 1;
-                        }
-                        else if (wcscmp(key, L"\\E") == 0) {
-                            if (bmpEtype == 1)
-                            {
-                                movenotclick = true;
-                            }
-                            if (bmpEtype == 2)
-                            {
-                                clicknotmove = true;
-                            }
-                            startsearchE = i + 1;
-                        }
-                        else if (wcscmp(key, L"\\F") == 0) {
-                            if (bmpFtype == 1)
-                            {
-                                movenotclick = true;
-                            }
-                            if (bmpFtype == 2)
-                            {
-                                clicknotmove = true;
-                            }
-                            startsearchF = i + 1;
-                        }
-                        // else return false;
-                        if (clicknotmove == false)
-                        {
-                            Xf = pt.x;
-                            Yf = pt.y;
-                        }
-                        if (movenotclick == false)
-                        {
-                            Xf = pt.x;
-                            Yf = pt.y;
-                            ClientToScreen(hwnd, &pt);
-                            SendMouseClick(pt.x, pt.y, 8, 1);
-                            Sleep(10);
-                            SendMouseClick(pt.x, pt.y, 3, 2);
-                            Sleep(10);
-                            SendMouseClick(pt.x, pt.y, 4, 2);
-                            ScreenToClient(hwnd, &pt);
-                        }
-                        else
-                        {
-                            ClientToScreen(hwnd, &pt);
-                            SendMouseClick(pt.x, pt.y, 8, 1);
-                            ScreenToClient(hwnd, &pt);
-                        }
-                        if (clicknotmove == true)
-                        {
-                            //   Sleep(10); //crashed game
-                            // fixme!
-                            //   X = fakecursor.x;
-                            //   Y = fakecursor.y;
-                              // SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
-
-                        }
-                        foundit = true;
-                        break;
-                    }
-
-                    // else  return false; 
-
-
-                    DeleteObject(hbmdsktop);
-                }
-
-                // else  
-
-            }
-
-            // else  
-        }
-        if (foundit == false)
-        {
-
-            for (int i = 0; i < serchnum; i++) //memory problem here somewhere
-            {
-                std::wstring wpath = WGetExecutableFolder() + key + std::to_wstring(i) + L".bmp";
-                //std::wstring wpath(path.begin(), path.end());
-
-
-                // Load the subimage 
-                if (LoadBMP24Bit(wpath.c_str(), smallPixels, smallW, smallH, strideSmall))
-                {
-                    // MessageBox(NULL, "Bmp + Emulated cursor mode", "other search", MB_OK | MB_ICONINFORMATION);
-                     // Capture screen
-                    if (hbmdsktop = CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, false))
-                    {
-
-                        POINT pt;
-                        // wsprintf(buffer, "second A is %d", i);
-                        // MessageBoxA(NULL, buffer, "Info", MB_OK);
-                         // MessageBox(NULL, "some kind of error", "captured desktop", MB_OK | MB_ICONINFORMATION);
-                        if (FindSubImage24(largePixels.data(), screenSize.cx, screenSize.cy, strideLarge, smallPixels.data(), smallW, smallH, strideSmall, pt, 0, 0))
-                        {
-                            //char buffer[100];
-
-                            vibrateController(controllerID, 15000);
-                            if (wcscmp(key, L"\\A") == 0) {
-                                if (bmpAtype == 1)
-                                {
-                                    movenotclick = true;
-                                }
-                                if (bmpAtype == 2)
-                                {
-                                    clicknotmove = true;
-                                }
-                                startsearchA = i + 1;
-                            }
-                            else if (wcscmp(key, L"\\B") == 0) {
-                                if (bmpBtype == 1)
-                                {
-                                    movenotclick = true;
-                                }
-                                if (bmpBtype == 2)
-                                {
-                                    clicknotmove = true;
-                                }
-                                startsearchB = i + 1;
-                            }
-                            else if (wcscmp(key, L"\\X") == 0) {
-                                if (bmpXtype == 1)
-                                {
-                                    movenotclick = true;
-                                }
-                                if (bmpXtype == 2)
-                                {
-                                    clicknotmove = true;
-                                }
-                                startsearchX = i + 1;
-                            }
-                            else if (wcscmp(key, L"\\Y") == 0) {
-                                if (bmpYtype == 1)
-                                {
-                                    movenotclick = true;
-                                }
-                                if (bmpYtype == 2)
-                                {
-                                    clicknotmove = true;
-                                }
-                                startsearchY = i + 1;
-                            }
-                            else if (wcscmp(key, L"\\C") == 0) {
-                                if (bmpCtype == 1)
-                                {
-                                    movenotclick = true;
-                                }
-                                if (bmpCtype == 2)
-                                {
-                                    clicknotmove = true;
-                                }
-                                startsearchC = i + 1;
-                            }
-                            else if (wcscmp(key, L"\\D") == 0) {
-                                if (bmpDtype == 1)
-                                {
-                                    movenotclick = true;
-                                }
-                                if (bmpDtype == 2)
-                                {
-                                    clicknotmove = true;
-                                }
-                                startsearchD = i + 1;
-                            }
-                            else if (wcscmp(key, L"\\E") == 0) {
-                                if (bmpEtype == 1)
-                                {
-                                    movenotclick = true;
-                                }
-                                if (bmpEtype == 2)
-                                {
-                                    clicknotmove = true;
-                                }
-                                startsearchE = i + 1;
-                            }
-                            else if (wcscmp(key, L"\\F") == 0) {
-                                if (bmpFtype == 1)
-                                {
-                                    movenotclick = true;
-                                }
-                                if (bmpFtype == 2)
-                                {
-                                    clicknotmove = true;
-                                }
-                                startsearchF = i + 1;
-                            }
-                            // X = pt.x;
-                            // Y = pt.y;
-                            if (clicknotmove == false)
-                            {
-                                Xf = pt.x;
-                                Yf = pt.y;
-                                // MessageBox(NULL, "some kind of error", "found image", MB_OK | MB_ICONINFORMATION);
-                            }
-                            if (movenotclick == false)
-                            {
-                                Xf = pt.x;
-                                Yf = pt.y;
-                                ClientToScreen(hwnd, &pt);
-                                SendMouseClick(pt.x, pt.y, 8, 1);
-                                Sleep(10);
-                                SendMouseClick(pt.x, pt.y, 3, 2);
-                                Sleep(10);
-                                SendMouseClick(pt.x, pt.y, 4, 2);
-                                ScreenToClient(hwnd, &pt);
-                            }
-                            else
-                            {
-                                ClientToScreen(hwnd, &pt);
-                                SendMouseClick(pt.x, pt.y, 8, 1);
-                                ScreenToClient(hwnd, &pt);
-                            }
-                            if (clicknotmove == true)
-                            {
-                                //fixme!!
-                                //Sleep(2);  
-                               // X = fakecursor.x;
-                               // Y = fakecursor.y;
-                               // SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
-
-                            }
-                            foundit = true;
-                            break;
-                        }
-
-                        // DeleteObject(hbm24);
-                        DeleteObject(hbmdsktop);
-                    }
-                    //  else  return false;
-
-
-
-                }
-            }
-
-
-        }
-    }
-    else if (showmessage == 0) //mode 2 button mapping //showmessage var to make sure no double map or map while message
-    {
-        //RepaintWindow(hwnd, NULL, FALSE); 
-        Sleep(100); //to make sure red flicker expired
-        std::wstring wpath = WGetExecutableFolder() + key + std::to_wstring(serchnum) + L".bmp";
-       // std::wstring wpath(path.begin(), path.end());
-        SaveWindow10x10BMP(hwnd, wpath.c_str(), Xf, Yf);
-        // MessageBox(NULL, "Mapped spot!", key, MB_OK | MB_ICONINFORMATION);
-        showmessage = 10;
-        return true;
-    }
-    else showmessage = 11;
-    Sleep(50); //to avoid double press
-    pausedraw = false;
-    return true;
-}
 //int akkumulator = 0; 
 byte DIKcodes(int DIK) {
 
@@ -1905,15 +1031,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     Dtype = GetPrivateProfileIntW(iniSettings.c_str(), L"Dinputtype", 0, iniPath.c_str());
     Etype = GetPrivateProfileIntW(iniSettings.c_str(), L"Einputtype", 0, iniPath.c_str());
     Ftype = GetPrivateProfileIntW(iniSettings.c_str(), L"Finputtype", 0, iniPath.c_str());
-
-    bmpAtype = GetPrivateProfileIntW(iniSettings.c_str(), L"AbmpAction", 0, iniPath.c_str());
-    bmpBtype = GetPrivateProfileIntW(iniSettings.c_str(), L"BbmpAction", 0, iniPath.c_str());
-    bmpXtype = GetPrivateProfileIntW(iniSettings.c_str(), L"XbmpAction", 0, iniPath.c_str());
-    bmpYtype = GetPrivateProfileIntW(iniSettings.c_str(), L"YbmpAction", 0, iniPath.c_str());
-    bmpCtype = GetPrivateProfileIntW(iniSettings.c_str(), L"CbmpAction", 0, iniPath.c_str());
-    bmpDtype = GetPrivateProfileIntW(iniSettings.c_str(), L"DbmpAction", 0, iniPath.c_str());
-    bmpEtype = GetPrivateProfileIntW(iniSettings.c_str(), L"EbmpAction", 0, iniPath.c_str());
-    bmpFtype = GetPrivateProfileIntW(iniSettings.c_str(), L"FbmpAction", 0, iniPath.c_str());
 
     uptype = GetPrivateProfileIntW(iniSettings.c_str(), L"Upkey", -1, iniPath.c_str());
     downtype = GetPrivateProfileIntW(iniSettings.c_str(), L"Downkey", -2, iniPath.c_str());
@@ -2176,23 +1293,16 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         EnterCriticalSection(&deltaLock);
                         Dkeyhilo[0] = false;
                         LeaveCriticalSection(&deltaLock);
-                        PostKeyFunction(hwnd, Atype, false);
                     }
                 }
                 else if (buttons & XINPUT_GAMEPAD_A && onoroff == true)
                 {
                     oldA = true;
-                    startsearch = startsearchA;
-                    if (Buttonaction(L"\\A", mode, numphotoA, startsearch)) //press
-                    {
-                        
-                    }
                     if (foundit == false)
                     {
                         EnterCriticalSection(&deltaLock);
                         Dkeyhilo[0] = true;
                         LeaveCriticalSection(&deltaLock);
-                        PostKeyFunction(hwnd, Atype, true);
                     }
                     if (mode == 2 && showmessage != 11)
                     {
@@ -2214,7 +1324,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         EnterCriticalSection(&deltaLock);
                         Dkeyhilo[1] = false;
                         LeaveCriticalSection(&deltaLock);
-                        PostKeyFunction(hwnd, Btype, false);
                     }
                 }
                 else if (buttons & XINPUT_GAMEPAD_B && onoroff == true)
@@ -2222,18 +1331,9 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
 
 
                     oldB = true;
-
-                    startsearch = startsearchB;
-                    if (Buttonaction(L"\\B", mode, numphotoB, startsearch))
-                    { //reports on foundit if bmp success
-                    }
-                    if (foundit == false)
-                    {
                         EnterCriticalSection(&deltaLock);
                         Dkeyhilo[1] = true;
                         LeaveCriticalSection(&deltaLock);
-                        PostKeyFunction(hwnd, Btype, true);
-                    }
                     if (mode == 2 && showmessage != 11)
                     {
                         numphotoB++;
@@ -2255,22 +1355,15 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         EnterCriticalSection(&deltaLock);
                         Dkeyhilo[2] = false;
                         LeaveCriticalSection(&deltaLock);
-                        PostKeyFunction(hwnd, Xtype, false);
                     }
                 }
                 else if (buttons & XINPUT_GAMEPAD_X && onoroff == true)
                 {
                     oldX = true;
 
-                    startsearch = startsearchX;
-                    Buttonaction(L"\\X", mode, numphotoX, startsearch);
-                    if (foundit == false)
-                    {
                         EnterCriticalSection(&deltaLock);
                         Dkeyhilo[2] = true;
                         LeaveCriticalSection(&deltaLock);
-                        PostKeyFunction(hwnd, Xtype, true);
-                    }
                     if (mode == 2 && showmessage != 11)
                     {
                         numphotoX++;
@@ -2291,27 +1384,15 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         EnterCriticalSection(&deltaLock);
                         Dkeyhilo[3] = false;
                         LeaveCriticalSection(&deltaLock);
-                        PostKeyFunction(hwnd, Ytype, false);
                     }
                 }
                 else if (buttons & XINPUT_GAMEPAD_Y && onoroff == true)
                 {
                     oldY = true;
 
-                    startsearch = startsearchY;
-                    Buttonaction(L"\\Y", mode, numphotoY, startsearch);
-                    if (mode == 2 && showmessage != 11)
-                    {
-                        numphotoY++;
-                        Sleep(500);
-                    }
-                    if (foundit == false)
-                    {
                         EnterCriticalSection(&deltaLock);
                         Dkeyhilo[3] = true;
                         LeaveCriticalSection(&deltaLock);
-                        PostKeyFunction(hwnd, Ytype, true);
-                    }
                 }
 
 
@@ -2327,22 +1408,14 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         EnterCriticalSection(&deltaLock);
                         Dkeyhilo[6] = false;
                         LeaveCriticalSection(&deltaLock);
-                        PostKeyFunction(hwnd, Ctype, false);
                     }
                 }
                 else if (buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER && onoroff == true)
                 {
                     oldC = true;
-
-                    startsearch = startsearchC;
-                    Buttonaction(L"\\C", mode, numphotoC, startsearch);
-                    if (foundit == false)
-                    {
                         EnterCriticalSection(&deltaLock);
                         Dkeyhilo[6] = true;
                         LeaveCriticalSection(&deltaLock);
-                        PostKeyFunction(hwnd, Ctype, true);
-                    }
                     if (mode == 2 && showmessage == 0)
                     {
                         numphotoC++;
@@ -2363,22 +1436,14 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         EnterCriticalSection(&deltaLock);
                         Dkeyhilo[7] = false;
                         LeaveCriticalSection(&deltaLock);
-                        PostKeyFunction(hwnd, Dtype, false);
                     }
                 }
                 else if (buttons & XINPUT_GAMEPAD_LEFT_SHOULDER && onoroff == true)
                 {
                     oldD = true;
-
-                    startsearch = startsearchD;
-                    Buttonaction(L"\\D", mode, numphotoD, startsearch);
-                    if (foundit == false)
-                    {
-                        PostKeyFunction(hwnd, Dtype, true);
                         EnterCriticalSection(&deltaLock);
                         Dkeyhilo[7] = true;
                         LeaveCriticalSection(&deltaLock);
-                    }
                     if (mode == 2 && showmessage != 11)
                     {
                         numphotoD++;
@@ -2400,22 +1465,14 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         EnterCriticalSection(&deltaLock);
                         Dkeyhilo[4] = false;
                         LeaveCriticalSection(&deltaLock);
-                        PostKeyFunction(hwnd, Etype, false);
                     }
                 }
                 else if (buttons & XINPUT_GAMEPAD_RIGHT_THUMB && onoroff == true)
                 {
                     oldE = true;
-
-                    startsearch = startsearchE;
-                    Buttonaction(L"\\E", mode, numphotoE, startsearch);
-                    if (foundit == false)
-                    {
-                        PostKeyFunction(hwnd, Etype, true);
                         EnterCriticalSection(&deltaLock);
                         Dkeyhilo[4] = true;
                         LeaveCriticalSection(&deltaLock);
-                    }
                     if (mode == 2 && showmessage != 11)
                     {
                         numphotoE++;
@@ -2436,22 +1493,14 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         EnterCriticalSection(&deltaLock);
                         Dkeyhilo[5] = false;
                         LeaveCriticalSection(&deltaLock);
-                        PostKeyFunction(hwnd, Ftype, false);
                     }
                 }
                 else if (buttons & XINPUT_GAMEPAD_LEFT_THUMB && onoroff == true)
                 {
                     oldF = true;
-
-                    startsearch = startsearchF;
-                    Buttonaction(L"\\F", mode, numphotoF, startsearch);
-                    if (foundit == false)
-                    {
-                        PostKeyFunction(hwnd, Ftype, true);
                         EnterCriticalSection(&deltaLock);
                         Dkeyhilo[5] = true;
                         LeaveCriticalSection(&deltaLock);
-                    }
                     if (mode == 2 && showmessage != 11)
                     {
                         numphotoF++;
@@ -2475,7 +1524,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     }
                     else {
                         oldup = false;
-                        PostKeyFunction(hwnd, uptype, false);
                         EnterCriticalSection(&deltaLock);
                         Dkeyhilo[8] = false;
                         LeaveCriticalSection(&deltaLock);
@@ -2494,7 +1542,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     scrollmap = true;
                     if (scrolloutsidewindow == 2) {
                         oldup = true;
-                        PostKeyFunction(hwnd, uptype, true);
                     }
                     if (scrolloutsidewindow >= 3) {
                         oldup = true;
@@ -2525,7 +1572,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         Dkeyhilo[9] = false;
                         LeaveCriticalSection(&deltaLock);
                         olddown = false;
-                        PostKeyFunction(hwnd, downtype, false);
                     }
                 }
                 else if (buttons & XINPUT_GAMEPAD_DPAD_DOWN && onoroff == true)
@@ -2541,7 +1587,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     scrollmap = true;
                     if (scrolloutsidewindow == 2) {
                         olddown = true;
-                        PostKeyFunction(hwnd, downtype, true);
                     }
                     if (scrolloutsidewindow >= 3) {
                         olddown = true;
@@ -2565,7 +1610,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     }
                     else {
                         oldleft = false;
-                        PostKeyFunction(hwnd, lefttype, false);
                         EnterCriticalSection(&deltaLock);
                         Dkeyhilo[10] = false;
                         LeaveCriticalSection(&deltaLock);
@@ -2582,7 +1626,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     scrollmap = true;
                     if (scrolloutsidewindow == 2 || scrolloutsidewindow == 4) {
                         oldleft = true;
-                        PostKeyFunction(hwnd, lefttype, true);
                         EnterCriticalSection(&deltaLock);
                         Dkeyhilo[10] = true;
                         LeaveCriticalSection(&deltaLock);
@@ -2602,7 +1645,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     }
                     else {
                         oldright = false;
-                        PostKeyFunction(hwnd, righttype, false);
                         EnterCriticalSection(&deltaLock);
                         Dkeyhilo[11] = false;
                         LeaveCriticalSection(&deltaLock);
@@ -2618,7 +1660,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     scrollmap = true;
                     if (scrolloutsidewindow == 2 || scrolloutsidewindow == 4) {
                         oldright = true;
-                        PostKeyFunction(hwnd, righttype, true);
                         EnterCriticalSection(&deltaLock);
                         Dkeyhilo[11] = true;
                         LeaveCriticalSection(&deltaLock);
@@ -2727,16 +1768,12 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                                     Xscroll = +scrollXaxis / scrollspeed3;
                                     didscroll = true;
                                 }
-                                // PostKeyFunction(hwnd, 42, true);
                             }
                             else
                             { //stop
                                 oldscrollleftaxis = false;
-                                if (scrolloutsidewindow == 2)
-                                    PostKeyFunction(hwnd, 42, false);
                                 if (scrolloutsidewindow == 4)
                                 { 
-                                    PostKeyFunction(hwnd, 12, false);
                                     EnterCriticalSection(&deltaLock);
                                     Dkeyhilo[14] = false;
                                     LeaveCriticalSection(&deltaLock);
@@ -2745,10 +1782,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         }
                         else if (scrollXaxis < AxisLeftsens) //left
                         {
-                            if (scrolloutsidewindow == 2)
-                                PostKeyFunction(hwnd, 42, true);
                             if (scrolloutsidewindow == 4) {
-                                PostKeyFunction(hwnd, 12, true);
                                 EnterCriticalSection(&deltaLock);
                                 Dkeyhilo[14] = true;
                                 LeaveCriticalSection(&deltaLock);
@@ -2779,11 +1813,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                             }
                             else {
                                 oldscrollrightaxis = false;
-                                if (scrolloutsidewindow == 2)
-                                    PostKeyFunction(hwnd, 43, false);
                                 if (scrolloutsidewindow == 4)
                                 { 
-                                    PostKeyFunction(hwnd, 13, false);
                                     EnterCriticalSection(&deltaLock);
                                     Dkeyhilo[15] = false;
                                     LeaveCriticalSection(&deltaLock);
@@ -2792,11 +1823,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         }
                         else if (scrollXaxis > AxisRightsens) //right
                         {
-                            if (scrolloutsidewindow == 2)
-                                PostKeyFunction(hwnd, 43, true);
                             if (scrolloutsidewindow == 4)
                             { 
-                                PostKeyFunction(hwnd, 13, true);
                                 EnterCriticalSection(&deltaLock);
                                 Dkeyhilo[15] = true;
                                 LeaveCriticalSection(&deltaLock);
@@ -2818,7 +1846,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         {
                             if (scrollYaxis < AxisDownsens)
                             {
-                                //  PostKeyFunction(hwnd, 41, true);
                                 if (scrolloutsidewindow == 3)
                                 { //keep
                                     scrollYaxis = scrollYaxis - AxisDownsens; //zero input
@@ -2829,11 +1856,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                             }
                             else {
                                 oldscrolldownaxis = false;
-                                if (scrolloutsidewindow == 2)
-                                    PostKeyFunction(hwnd, 41, false);
                                 if (scrolloutsidewindow == 4)
                                 { 
-                                    PostKeyFunction(hwnd, 11, false);
                                     EnterCriticalSection(&deltaLock);
                                     Dkeyhilo[13] = false;
                                     LeaveCriticalSection(&deltaLock);
@@ -2842,11 +1866,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         }
                         else if (scrollYaxis < AxisDownsens) //down
                         { //start
-                            if (scrolloutsidewindow == 2)
-                                PostKeyFunction(hwnd, 41, true);
                             if (scrolloutsidewindow == 4)
                             {
-                                PostKeyFunction(hwnd, 11, true);
                                 EnterCriticalSection(&deltaLock);
                                 Dkeyhilo[13] = true;
                                 LeaveCriticalSection(&deltaLock);
@@ -2868,7 +1889,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         {
                             if (scrollYaxis > AxisUpsens)
                             {
-                                // PostKeyFunction(hwnd, 40, true);
                                 if (scrolloutsidewindow == 3)
                                 { //keep
                                     scrollYaxis = scrollYaxis - AxisUpsens; //zero input
@@ -2880,11 +1900,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                             }
                             else {
                                 oldscrollupaxis = false;
-                                if (scrolloutsidewindow == 2)
-                                    PostKeyFunction(hwnd, 40, false);
                                 if (scrolloutsidewindow == 4)
                                 {
-                                    PostKeyFunction(hwnd, 10, false);
                                     EnterCriticalSection(&deltaLock);
                                     Dkeyhilo[12] = false;
                                     LeaveCriticalSection(&deltaLock);
@@ -2893,11 +1910,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         }
                         else if (scrollYaxis > AxisUpsens) //up
                         {
-                            if (scrolloutsidewindow == 2)
-                                PostKeyFunction(hwnd, 40, true);
                             if (scrolloutsidewindow == 4) 
                             {
-                                PostKeyFunction(hwnd, 10, true);
                                 EnterCriticalSection(&deltaLock);
                                 Dkeyhilo[12] = true;
                                 LeaveCriticalSection(&deltaLock);
@@ -3131,8 +2145,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         {
                             //save coordinates
                             //start
-                            if (hooksinited == false)
-                                SetupHook();
                             startdrag.x = Xf;
                             startdrag.y = Yf;
                             rightPressedold = true;
@@ -3158,9 +2170,12 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     }
                     if (rightPressedold)
                     {
+                        vibrator += 10;
+                        vibrateController(0, vibrator);
                         if (!rightPressed)
                         {
-
+                            vibrator = 0;
+                            vibrateController(0, vibrator);
                             if (userealmouse == 0)
                                 SendMouseClick(fakecursor.x, fakecursor.y, 4, 2);
                             else
@@ -3213,11 +2228,9 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 }
                 if (showmessage == 69) { //disabling dll
                     onoroff = false;
-                    MH_DisableHook(MH_ALL_HOOKS);
                 }
                 if (showmessage == 70) { //enabling dll
                     onoroff = true;
-                    MH_EnableHook(MH_ALL_HOOKS);
                 }
                 showmessage = 0;
                 counter = 0;

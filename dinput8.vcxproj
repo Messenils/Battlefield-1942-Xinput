@@ -60,7 +60,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <ModuleDefinitionFile>dinput8.def</ModuleDefinitionFile>
-      <AdditionalDependencies>C:\Users\nils\source\repos\dXwrapper_cntrldll\include\MinHook.x86.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
