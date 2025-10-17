@@ -16,6 +16,8 @@
 
 #include "dinput8.h"
 
+bool combikeysW[1];
+
 HRESULT m_IDirectInputDevice8W::QueryInterface(REFIID riid, LPVOID* ppvObj)
 {
 	if ((riid == IID_IDirectInputDevice8W || riid == IID_IUnknown) && ppvObj)
@@ -101,10 +103,28 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 			EnterCriticalSection(&deltaLock);
 			pMouse->lX = delta.x;
 			pMouse->lY = delta.y;
-			if (Dmousehilo[0] == true) pMouse->rgbButtons[0] = 0x80;
-			else pMouse->rgbButtons[0] = 0x00;
-			if (Dmousehilo[1] == true) pMouse->rgbButtons[1] = 0x80;
-			else pMouse->rgbButtons[1] = 0x00;
+
+			//if (Dmousehilo[0] == true) pMouse->rgbButtons[0] = 0x80;
+			//else pMouse->rgbButtons[0] = 0x00;
+			//if (Dmousehilo[1] == true) pMouse->rgbButtons[1] = 0x80;
+			//else pMouse->rgbButtons[1] = 0x00;
+
+			if (Dmousehilo[0] == true) {
+				pMouse->rgbButtons[0] = 0x80;
+				combikeysW[0] = true;
+			}
+			else {
+				pMouse->rgbButtons[0] = 0x00;
+				combikeysW[0] = false;
+			}
+			if (Dmousehilo[1] == true) {
+				pMouse->rgbButtons[1] = 0x80;
+				combikeysW[1] = true;
+			}
+			else {
+				combikeysW[1] = false;
+				pMouse->rgbButtons[1] = 0x00;
+			}
 			LeaveCriticalSection(&deltaLock);
 			//pMouse->lX = 0;
 			//pMouse->lY = 0;
@@ -124,10 +144,28 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 			EnterCriticalSection(&deltaLock);
 			pMouse->lX = delta.x;
 			pMouse->lY = delta.y;
-			if (Dmousehilo[0] == true) pMouse->rgbButtons[0] = 0x80;
-			else pMouse->rgbButtons[0] = 0x00;
-			if (Dmousehilo[1] == true) pMouse->rgbButtons[1] = 0x80;
-			else pMouse->rgbButtons[1] = 0x00;
+
+			//if (Dmousehilo[0] == true) pMouse->rgbButtons[0] = 0x80;
+			//else pMouse->rgbButtons[0] = 0x00;
+			//if (Dmousehilo[1] == true) pMouse->rgbButtons[1] = 0x80;
+			//else pMouse->rgbButtons[1] = 0x00;
+
+			if (Dmousehilo[0] == true) {
+				pMouse->rgbButtons[0] = 0x80;
+				combikeysW[0] = true;
+			}
+			else {
+				pMouse->rgbButtons[0] = 0x00;
+				combikeysW[0] = false;
+			}
+			if (Dmousehilo[1] == true) {
+				pMouse->rgbButtons[1] = 0x80;
+				combikeysW[1] = true;
+			}
+			else {
+				combikeysW[1] = false;
+				pMouse->rgbButtons[1] = 0x00;
+			}
 			LeaveCriticalSection(&deltaLock);
 			//pMouse->lX = 0;
 			//pMouse->lY = 0;
@@ -147,6 +185,49 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 					pKeys[keytodinput[i]] &= ~0x80; //0 low?
 					//MessageBoxA(nullptr, "Setting A key low", "Warning", MB_OK | MB_ICONWARNING);
 				}
+			}
+			if (pKeys[DIK_SPACE] == 0x80)
+			{
+				pKeys[DIK_9] = 0x80;
+			}
+			else {
+				pKeys[DIK_9] = 0;
+			}
+
+			if (combikeysW[1])
+			{ //aim and pick up kits common button
+				pKeys[DIK_G] = 0x80;
+				//select weapons range 5-8
+				if (pKeys[DIK_1] == 0x80)
+				{
+					pKeys[DIK_1] = 0;
+					pKeys[DIK_5] = 0x80;
+				}
+				else pKeys[DIK_5] = 0;
+
+				if (pKeys[DIK_2] == 0x80)
+				{
+					pKeys[DIK_2] = 0;
+					pKeys[DIK_6] = 0x80;
+				}
+				else pKeys[DIK_6] = 0;
+
+				if (pKeys[DIK_3] == 0x80)
+				{
+					pKeys[DIK_3] = 0;
+					pKeys[DIK_7] = 0x80;
+				}
+				else pKeys[DIK_7] = 0;
+
+				if (pKeys[DIK_4] == 0x80)
+				{
+					pKeys[DIK_4] = 0;
+					pKeys[DIK_8] = 0x80;
+				}
+				else pKeys[DIK_8] = 0;
+			}
+			else {
+				pKeys[DIK_G] = 0;
 			}
 			//if (Dkeyhilo[0] == true)
 			//	pKeys[0x1E] |= 0x80; // Set high bit to indicate key is pressed
