@@ -33,8 +33,7 @@ extern AddressLookupTable<void> ProxyAddressLookupTable;
 extern POINT delta;
 extern CRITICAL_SECTION deltaLock;
 extern bool Dmousehilo[4];
-extern bool DmouseDscroll;
-extern bool DmouseUscroll;
+extern bool Xenabled;
 extern bool Dkeyhilo[18];// byte[] keytodinput
 extern unsigned char keytodinput[18];
 

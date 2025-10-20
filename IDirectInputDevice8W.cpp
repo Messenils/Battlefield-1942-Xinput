@@ -91,16 +91,16 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 {
 
 	HRESULT hr = ProxyInterface->GetDeviceState(cbData, lpvData);
-
-	if (SUCCEEDED(hr) && lpvData)
+	EnterCriticalSection(&deltaLock);
+	if (SUCCEEDED(hr) && lpvData && Xenabled)
 	{
+		
 		// Check if this is a mouse device and the structure is the expected size
 		if (cbData == sizeof(DIMOUSESTATE))
 		{
 			DIMOUSESTATE* pMouse = reinterpret_cast<DIMOUSESTATE*>(lpvData);
 
 			// Example: scale movement by 50%
-			EnterCriticalSection(&deltaLock);
 			pMouse->lX = delta.x;
 			pMouse->lY = delta.y;
 
@@ -136,7 +136,6 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 				Dmousehilo[3] = false;
 			}
 			else pMouse->lZ = 0;
-			LeaveCriticalSection(&deltaLock);
 			//pMouse->lX = 0;
 			//pMouse->lY = 0;
 			// Optional: clamp or remap values here if needed
@@ -152,7 +151,6 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 		else if (cbData == sizeof(DIMOUSESTATE2))
 		{
 			DIMOUSESTATE2* pMouse = reinterpret_cast<DIMOUSESTATE2*>(lpvData);
-			EnterCriticalSection(&deltaLock);
 			pMouse->lX = delta.x;
 			pMouse->lY = delta.y;
 
@@ -188,7 +186,6 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 				Dmousehilo[3] = false;
 			}
 			else pMouse->lZ = 0;
-			LeaveCriticalSection(&deltaLock);
 			//pMouse->lX = 0;
 			//pMouse->lY = 0;
 			//ZeroMemory(lpvData, cbData);
@@ -196,7 +193,7 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 		else if (cbData == 256) // Keyboard state buffer size
 		{
 			BYTE* pKeys = reinterpret_cast<BYTE*>(lpvData);
-			EnterCriticalSection(&deltaLock);
+			
 			for (int i = 0; i < 17; ++i)
 			{
 				if (Dkeyhilo[i] == true && keytodinput[i] != 0x00) {
@@ -338,7 +335,7 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 			//if (Dkeyhilo[0] == true)
 			//	pKeys[0x1E] |= 0x80; // Set high bit to indicate key is pressed
 			//else pKeys[0x1E] &= ~0x80; // Clear high bit to indicate key is released
-			LeaveCriticalSection(&deltaLock);
+			
 
 			// Example: simulate pressing the 'A' key (DIK_A = 0x1E)
 			
@@ -348,9 +345,9 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 
 			// You can add more keys or logic here based on your input system
 		}
-
+		
 	}
-
+	LeaveCriticalSection(&deltaLock);
 	return hr;
 }
 

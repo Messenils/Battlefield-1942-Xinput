@@ -166,6 +166,7 @@ int DIKU;
 int DIKV;
 int DIKW;
 bool Dmousehilo[4];
+bool Xenabled = false;
 bool Dkeyhilo[18];// byte[] keytodinput
 unsigned char keytodinput[18] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
 //CRITICAL_SECTION keytodinputLock;  // Definition and storage
@@ -1336,9 +1337,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
    // HBITMAP hbmdsktop = NULL;
     ///////////////////////////////////////////////////////////////////////////////////LLLLLLLOOOOOOOOOOOOOPPPPPPPPPPPPP
     bool Aprev = false;
-
+    MessageBeep(MB_OK);
     while (loop == true)
     {
+		
         bool movedmouse = false; //reset
         int calcsleep = 0;
         if (hwnd == NULL)
@@ -1399,6 +1401,9 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 fakecursor.y = Yf;
                 ClientToScreen(hwnd, &fakecursor);
                 // Controller is connected
+                EnterCriticalSection(&deltaLock);
+                Xenabled = true;
+                LeaveCriticalSection(&deltaLock);
                 WORD buttons = state.Gamepad.wButtons;
                 bool currA = (buttons & XINPUT_GAMEPAD_A) != 0;
                 bool Apressed = (buttons & XINPUT_GAMEPAD_A);
@@ -2402,11 +2407,14 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
             } //no controller
             else {
                 showmessage = 12;
+                EnterCriticalSection(&deltaLock);
+				Xenabled = false;  
+                LeaveCriticalSection(&deltaLock);
                 //MessageBoxA(NULL, "Controller not connected", "Error", MB_OK | MB_ICONERROR);
                // CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, true); //draw message
             }
-            if (drawfakecursor == 1 || showmessage != 0)
-                CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, true); //draw fake cursor
+            if (drawfakecursor == 1 && showmessage != 0)
+                CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, true); //draw messages. only on drawfakecursor == 1
         } // no hwnd
         if (knappsovetid > 20)
         {
