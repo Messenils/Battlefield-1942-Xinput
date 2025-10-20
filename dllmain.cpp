@@ -138,7 +138,8 @@ float accel_multiplier = 1.90f; // Look Acceleration Multiplier (1.0 to 3.0)
 ///shares with dinput8 hooks
 POINT delta = { 0, 0 }; //extern to ship to getdevicestate ccp
 CRITICAL_SECTION deltaLock;  // Definition and storage
-bool Dmousehilo[4];
+
+
 
 //dik codes
 int DIKA;
@@ -164,8 +165,9 @@ int DIKT;
 int DIKU;
 int DIKV;
 int DIKW;
-bool Dkeyhilo[17];// byte[] keytodinput
-unsigned char keytodinput[17] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+bool Dmousehilo[4];
+bool Dkeyhilo[18];// byte[] keytodinput
+unsigned char keytodinput[18] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
 //CRITICAL_SECTION keytodinputLock;  // Definition and storage
 //bool statehilo{ 8 }; //2: set to false on new keys. then getstate read them and set back to true 
 //CRITICAL_SECTION statehiloLock;  // Definition and storage
@@ -247,7 +249,7 @@ bool oldup = false;
 bool olddown = false;
 bool oldleft = false;
 bool oldright = false;
-
+bool oldback = false;
 int startsearch = 0;
 int startsearchA = 0;
 int startsearchB = 0;
@@ -269,6 +271,9 @@ int Ctype = 0;
 int Dtype = 0;
 int Etype = 0;
 int Ftype = 0;
+
+int starttype = 0;
+int backtype = 0;
 
 int bmpAtype = 0;
 int bmpBtype = 0;
@@ -540,7 +545,8 @@ void vibrateController(int controllerId, WORD strength)
     XInputSetState(controllerId, &vibration);
 }
 
-bool SendMouseClick(int x, int y, int z, int many) {
+bool SendMouseClick(int x, int y, int z, int many) 
+{
     // Create a named mutex
 
 
@@ -587,10 +593,23 @@ bool SendMouseClick(int x, int y, int z, int many) {
             LeaveCriticalSection(&deltaLock);
 
         }
+        if (z == 20 || z == 21) //WM_LBUTTONDBLCLK
+        { //mousewheel
+            POINT heer;
+            heer.x = x;
+            heer.y = y;
+            // ScreenToClient(hwnd, &heer);
+            LPARAM clickPos = MAKELPARAM(0, 0);
+            WPARAM wParam = 0;
+            if (z == 20)
+                wParam = MAKEWPARAM(0, -120);
+            if (z == 21)
+                wParam = MAKEWPARAM(0, 120);
+            PostMessage(hwnd, WM_MOUSEWHEEL, wParam, clickPos);
+        }
         return true;
     
 }
-
 
 HWND GetMainWindowHandle(DWORD targetPID) {
     HWND hwnd = nullptr;
@@ -1251,24 +1270,27 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     int sendfocus = GetPrivateProfileIntW(iniSettings.c_str(), L"Sendfocus", 0, iniPath.c_str());
     int responsetime = GetPrivateProfileIntW(iniSettings.c_str(), L"Responsetime", 0, iniPath.c_str());
     int doubleclicks = GetPrivateProfileIntW(iniSettings.c_str(), L"Doubleclicks", 0, iniPath.c_str());
-    int scrollenddelay = GetPrivateProfileIntW(iniSettings.c_str(), L"DelayEndScroll", 0, iniPath.c_str());
+    int scrollenddelay = GetPrivateProfileIntW(iniSettings.c_str(), L"Scrolldelay", 100, iniPath.c_str());
     int quickMW = GetPrivateProfileIntW(iniSettings.c_str(), L"MouseWheelContinous", 1, iniPath.c_str());
 
     //clicknotmove 2
     //movenotclick 1
-    Atype = GetPrivateProfileIntW(iniSettings.c_str(), L"Ainputtype", 0, iniPath.c_str());
-    Btype = GetPrivateProfileIntW(iniSettings.c_str(), L"Binputtype", 0, iniPath.c_str());
-    Xtype = GetPrivateProfileIntW(iniSettings.c_str(), L"Xinputtype", 1, iniPath.c_str());
-    Ytype = GetPrivateProfileIntW(iniSettings.c_str(), L"Yinputtype", 0, iniPath.c_str());
-    Ctype = GetPrivateProfileIntW(iniSettings.c_str(), L"Cinputtype", 2, iniPath.c_str());
-    Dtype = GetPrivateProfileIntW(iniSettings.c_str(), L"Dinputtype", 0, iniPath.c_str());
-    Etype = GetPrivateProfileIntW(iniSettings.c_str(), L"Einputtype", 0, iniPath.c_str());
-    Ftype = GetPrivateProfileIntW(iniSettings.c_str(), L"Finputtype", 0, iniPath.c_str());
+    Atype = GetPrivateProfileIntW(iniSettings.c_str(), L"Ainputtype", 13, iniPath.c_str());
+    Btype = GetPrivateProfileIntW(iniSettings.c_str(), L"Binputtype", 50, iniPath.c_str());
+    Xtype = GetPrivateProfileIntW(iniSettings.c_str(), L"Xinputtype", 8, iniPath.c_str());
+    Ytype = GetPrivateProfileIntW(iniSettings.c_str(), L"Yinputtype", 29, iniPath.c_str());
+    Ctype = GetPrivateProfileIntW(iniSettings.c_str(), L"Cinputtype", 14, iniPath.c_str());
+    Dtype = GetPrivateProfileIntW(iniSettings.c_str(), L"Dinputtype", 15, iniPath.c_str());
+    Etype = GetPrivateProfileIntW(iniSettings.c_str(), L"Einputtype", 27, iniPath.c_str());
+    Ftype = GetPrivateProfileIntW(iniSettings.c_str(), L"Finputtype", 5, iniPath.c_str());
 
-    uptype = GetPrivateProfileIntW(iniSettings.c_str(), L"Upkey", -1, iniPath.c_str());
-    downtype = GetPrivateProfileIntW(iniSettings.c_str(), L"Downkey", -2, iniPath.c_str());
-    lefttype = GetPrivateProfileIntW(iniSettings.c_str(), L"Leftkey", -3, iniPath.c_str());
-    righttype = GetPrivateProfileIntW(iniSettings.c_str(), L"Rightkey", -4, iniPath.c_str());
+    uptype = GetPrivateProfileIntW(iniSettings.c_str(), L"Upkey", 52, iniPath.c_str());
+    downtype = GetPrivateProfileIntW(iniSettings.c_str(), L"Downkey", 53, iniPath.c_str());
+    lefttype = GetPrivateProfileIntW(iniSettings.c_str(), L"Leftkey", 54, iniPath.c_str());
+    righttype = GetPrivateProfileIntW(iniSettings.c_str(), L"Rightkey", 55, iniPath.c_str());
+
+    starttype = GetPrivateProfileIntW(iniSettings.c_str(), L"Startkey", 2, iniPath.c_str());
+    backtype = GetPrivateProfileIntW(iniSettings.c_str(), L"Backkey", 1, iniPath.c_str());
 
     //hooks
     drawfakecursor = GetPrivateProfileIntW(iniSettings.c_str(), L"DrawFakeCursor", 0, iniPath.c_str());
@@ -1297,20 +1319,13 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     keytodinput[14] = DIKcodes(25);
     keytodinput[15] = DIKcodes(28);
     //escape
-    keytodinput[16] = DIKcodes(1);
+    keytodinput[16] = DIKcodes(starttype); //start
+    keytodinput[17] = DIKcodes(backtype); //back
     LeaveCriticalSection(&deltaLock);
 
     Sleep(1000);
     hwnd = GetMainWindowHandle(GetCurrentProcessId());
     int mode = InitialMode;
-    int numphotoA = -1;
-    int numphotoB = -1;
-    int numphotoX = -1;
-    int numphotoY = -1;
-    int numphotoC = -1;
-    int numphotoD = -1;
-    int numphotoE = -1;
-    int numphotoF = -1;
 
     if (controllerID == -9999)
     {
@@ -1418,11 +1433,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         Dkeyhilo[0] = true;
                         LeaveCriticalSection(&deltaLock);
                     }
-                    if (mode == 2 && showmessage != 11)
-                    {
-                        numphotoA++;
-                        Sleep(500);
-                    }
                 }
 
 
@@ -1449,11 +1459,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     EnterCriticalSection(&deltaLock);
                     Dkeyhilo[1] = true;
                     LeaveCriticalSection(&deltaLock);
-                    if (mode == 2 && showmessage != 11)
-                    {
-                        numphotoB++;
-                        Sleep(500);
-                    }
 
                 }
 
@@ -1480,11 +1485,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     EnterCriticalSection(&deltaLock);
                     Dkeyhilo[2] = true;
                     LeaveCriticalSection(&deltaLock);
-                    if (mode == 2 && showmessage != 11)
-                    {
-                        numphotoX++;
-                        Sleep(500);
-                    }
                 }
 
 
@@ -1516,15 +1516,25 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
 
                 if (oldC == true)
                 {
-                    if (buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER && onoroff == true)
+                    if (buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER && onoroff == true) //2
                     {
                         // keep posting?
+                        atick++;
+                        if (atick > scrollenddelay)
+                        {
+                            EnterCriticalSection(&deltaLock);
+                            Dmousehilo[2] = true; //dinputdevice will clear
+                            LeaveCriticalSection(&deltaLock);
+                            atick = 0;
+                        }
                     }
                     else {
                         PostKeyFunction(hwnd, Ctype, false);
                         oldC = false;
+                        atick = 0;
                         EnterCriticalSection(&deltaLock);
                         Dkeyhilo[6] = false;
+                       // Dmousehilo[2] = false;
                         LeaveCriticalSection(&deltaLock);
                     }
                 }
@@ -1532,29 +1542,37 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 {
                     PostKeyFunction(hwnd, Ctype, true);
                     oldC = true;
+                    atick = 0;
                     EnterCriticalSection(&deltaLock);
                     Dkeyhilo[6] = true;
+                    Dmousehilo[2] = true;
                     LeaveCriticalSection(&deltaLock);
-                    if (mode == 2 && showmessage == 0)
-                    {
-                        numphotoC++;
-                        Sleep(500);
-                    }
                 }
 
 
 
                 if (oldD == true)
                 {
-                    if (buttons & XINPUT_GAMEPAD_LEFT_SHOULDER && onoroff == true)
+                    if (buttons & XINPUT_GAMEPAD_LEFT_SHOULDER && onoroff == true) //3
                     {
                         // keep posting?
+                        // keep posting?
+                        atick++;
+                        if (atick > scrollenddelay)
+                        {
+                            EnterCriticalSection(&deltaLock);
+                            Dmousehilo[3] = true; //dinputdevice will clear
+                            LeaveCriticalSection(&deltaLock);
+                            atick = 0;
+                        }
                     }
                     else {
                         oldD = false;
                         PostKeyFunction(hwnd, Dtype, false);
                         EnterCriticalSection(&deltaLock);
                         Dkeyhilo[7] = false;
+                        atick = 0;
+                      //  Dmousehilo[3] = false;
                         LeaveCriticalSection(&deltaLock);
                     }
                 }
@@ -1562,14 +1580,11 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 {
                     PostKeyFunction(hwnd, Dtype, true);
                     oldD = true;
+                    atick = 0;
                     EnterCriticalSection(&deltaLock);
                     Dkeyhilo[7] = true;
+                    Dmousehilo[3] = true;
                     LeaveCriticalSection(&deltaLock);
-                    if (mode == 2 && showmessage != 11)
-                    {
-                        numphotoD++;
-                        Sleep(500);
-                    }
                 }
 
 
@@ -1580,6 +1595,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     if (buttons & XINPUT_GAMEPAD_RIGHT_THUMB && onoroff == true)
                     {
                         // keep posting?
+
                     }
                     else {
                         PostKeyFunction(hwnd, Etype, false);
@@ -1596,11 +1612,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     EnterCriticalSection(&deltaLock);
                     Dkeyhilo[4] = true;
                     LeaveCriticalSection(&deltaLock);
-                    if (mode == 2 && showmessage != 11)
-                    {
-                        numphotoE++;
-                        Sleep(500);
-                    }
                 }
 
 
@@ -1626,11 +1637,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     EnterCriticalSection(&deltaLock);
                     Dkeyhilo[5] = true;
                     LeaveCriticalSection(&deltaLock);
-                    if (mode == 2 && showmessage != 11)
-                    {
-                        numphotoF++;
-                        Sleep(500);
-                    }
                 }
 
 
@@ -1714,18 +1720,18 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                             //for sending mouse wheel. should work, but i went for combikey 5-8 instead
 							// all comination keys are in Inputdevice.cpp now
                           //  atick++;
-                         //   if (atick > 400) 
-                         //   {
-                          //      EnterCriticalSection(&deltaLock);
-                         //       if (Dmousehilo[1])
-                          //      {
-                                
-                                    
-                          //          Dmousehilo[3] == true; //dinputdevice will clear
+                           // if (atick > 400) 
+                           // {
+                           //     EnterCriticalSection(&deltaLock);
+                           //     if (Dmousehilo[1])
+                           //     {
+                           //     
+                            //        
+                           //         Dmousehilo[3] == true; //dinputdevice will clear
                            //         atick = 0;
-                           //     }
-                           //     LeaveCriticalSection(&deltaLock);
-                                
+                          //      }
+                          //      LeaveCriticalSection(&deltaLock);
+                          //      
                            // }
                         }
                     }
@@ -1841,8 +1847,25 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     scrollmap = false;
                 }
 
-
-
+                if (oldback) {
+                    if (buttons & XINPUT_GAMEPAD_BACK && showmessage == 0) {
+                        // hold?
+                    }
+                    else {
+                        //release
+                        oldback = false;
+                        EnterCriticalSection(&deltaLock);
+                        Dkeyhilo[17] = false;
+                        LeaveCriticalSection(&deltaLock);
+                    }
+                }
+                else if (buttons & XINPUT_GAMEPAD_BACK && showmessage == 0)
+                { //on press
+                    oldback = true;
+                    EnterCriticalSection(&deltaLock);
+                    Dkeyhilo[17] = true;
+                    LeaveCriticalSection(&deltaLock);
+				}
 
                 if (buttons & XINPUT_GAMEPAD_START && showmessage == 0)
                 {

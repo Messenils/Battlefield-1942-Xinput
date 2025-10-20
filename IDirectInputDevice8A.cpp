@@ -16,7 +16,7 @@
 
 #include "dinput8.h"
 
-bool combikeys[1];
+bool combikeys[2];
 HRESULT m_IDirectInputDevice8A::QueryInterface(REFIID riid, LPVOID * ppvObj)
 {
 	if ((riid == IID_IDirectInputDevice8A || riid == IID_IUnknown) && ppvObj)
@@ -121,6 +121,17 @@ HRESULT m_IDirectInputDevice8A::GetDeviceState(DWORD cbData, LPVOID lpvData)
 				combikeys[1] = false;
 				pMouse->rgbButtons[1] = 0x00;
 			}
+
+			if (Dmousehilo[2]) {
+				pMouse->lZ = 120;
+				Dmousehilo[2] = false;
+			}
+			else if (Dmousehilo[3]) {
+				pMouse->lZ = -120;
+				Dmousehilo[3] = false;
+			}
+			else pMouse->lZ = 0;
+
 			LeaveCriticalSection(&deltaLock);
 			//ZeroMemory(lpvData, cbData);
 			// Optional: clamp or remap values here if needed
@@ -140,12 +151,10 @@ HRESULT m_IDirectInputDevice8A::GetDeviceState(DWORD cbData, LPVOID lpvData)
 			//else pMouse->rgbButtons[1] = 0x00;
 
 			if (Dmousehilo[0] == true) {
-				pMouse->rgbButtons[0] = 0x80;
-				combikeys[0] = true;	
+				pMouse->rgbButtons[0] = 0x80;	
 			}
 			else {
 				pMouse->rgbButtons[0] = 0x00;
-				combikeys[0] = false;
 			}
 			if (Dmousehilo[1] == true) {
 				pMouse->rgbButtons[1] = 0x80;
@@ -155,6 +164,17 @@ HRESULT m_IDirectInputDevice8A::GetDeviceState(DWORD cbData, LPVOID lpvData)
 				combikeys[1] = false;
 				pMouse->rgbButtons[1] = 0x00;
 			}
+
+
+			if (Dmousehilo[2]) {
+				pMouse->lZ = 120;
+				Dmousehilo[2] = false;
+			}
+			else if (Dmousehilo[3]) {
+				pMouse->lZ = -120;
+				Dmousehilo[3] = false;
+			}
+			else pMouse->lZ = 0;
 			LeaveCriticalSection(&deltaLock);
 			//ZeroMemory(lpvData, cbData);
 
@@ -163,7 +183,7 @@ HRESULT m_IDirectInputDevice8A::GetDeviceState(DWORD cbData, LPVOID lpvData)
 		{
 			BYTE* pKeys = reinterpret_cast<BYTE*>(lpvData);
 			EnterCriticalSection(&deltaLock);
-			for (int i = 0; i < 17; ++i)
+			for (int i = 0; i < 18; ++i)
 			{
 				if (Dkeyhilo[i] == true && keytodinput[i] != 0x00) {
 					pKeys[keytodinput[i]] |= 0x80; //80 high?
@@ -175,12 +195,93 @@ HRESULT m_IDirectInputDevice8A::GetDeviceState(DWORD cbData, LPVOID lpvData)
 				}
 			}
 
-			if (pKeys[DIK_SPACE] == 0) //parachute and jump common button
+			//parachute and jump common button
+			if (pKeys[DIK_SPACE] == 0x80) 
 			{ 
 				pKeys[DIK_9] = 0x80;
 			}
 			else {
 				pKeys[DIK_9] = 0;
+			}
+
+			//lshift and camera change common button
+			if (pKeys[DIK_C] == 0x80)
+			{
+				pKeys[DIK_LSHIFT] = 0x80;
+				combikeys[0] = true;
+			}
+			else {
+				pKeys[DIK_LSHIFT] = 0;
+				combikeys[0] = false;
+			}
+
+			if (combikeys[0])
+			{
+				if (pKeys[keytodinput[8]] == 0x80)
+				{
+					pKeys[keytodinput[8]] = 0;
+					pKeys[DIK_F1] = 0x80;
+				}
+				else pKeys[DIK_F1] = 0;
+
+				if (pKeys[keytodinput[9]] == 0x80)
+				{
+					pKeys[keytodinput[9]] = 0;
+					pKeys[DIK_F2] = 0x80;
+				}
+				else pKeys[DIK_F2] = 0;
+
+				if (pKeys[keytodinput[10]] == 0x80)
+				{
+					pKeys[keytodinput[10]] = 0;
+					pKeys[DIK_F3] = 0x80;
+				}
+				else pKeys[DIK_F3] = 0;
+
+				if (pKeys[keytodinput[11]] == 0x80)
+				{
+					pKeys[keytodinput[11]] = 0;
+					pKeys[DIK_F4] = 0x80;
+				}
+				else pKeys[DIK_F4] = 0;
+
+				if (pKeys[keytodinput[0]] == 0x80)
+				{
+					pKeys[keytodinput[0]] = 0;
+					pKeys[DIK_F5] = 0x80;
+				}
+				else pKeys[DIK_F5] = 0;
+
+				if (pKeys[keytodinput[1]] == 0x80)
+				{
+					pKeys[keytodinput[1]] = 0;
+					pKeys[DIK_F6] = 0x80;
+				}
+				else pKeys[DIK_F6] = 0;
+
+				if (pKeys[keytodinput[2]] == 0x80)
+				{
+					pKeys[keytodinput[2]] = 0;
+					pKeys[DIK_F7] = 0x80;
+				}
+				else pKeys[DIK_F7] = 0;
+
+				if (pKeys[keytodinput[3]] == 0x80)
+				{
+					pKeys[keytodinput[3]] = 0;
+					pKeys[DIK_F8] = 0x80;
+				}
+				else pKeys[DIK_F8] = 0;
+			}
+			else {
+				pKeys[DIK_F1] = 0;
+				pKeys[DIK_F2] = 0;
+				pKeys[DIK_F3] = 0;
+				pKeys[DIK_F4] = 0;
+				pKeys[DIK_F5] = 0;
+				pKeys[DIK_F6] = 0;
+				pKeys[DIK_F7] = 0;
+				pKeys[DIK_F8] = 0;
 			}
 
 			if (combikeys[1]) 
@@ -217,6 +318,10 @@ HRESULT m_IDirectInputDevice8A::GetDeviceState(DWORD cbData, LPVOID lpvData)
 			}	
 			else {
 				pKeys[DIK_G] = 0;
+				pKeys[DIK_5] = 0;
+				pKeys[DIK_8] = 0;
+				pKeys[DIK_7] = 0;
+				pKeys[DIK_6] = 0;
 			}
 
 			//if (Dkeyhilo[0] == true)

@@ -16,7 +16,7 @@
 
 #include "dinput8.h"
 
-bool combikeysW[1];
+bool combikeysW[2];
 
 HRESULT m_IDirectInputDevice8W::QueryInterface(REFIID riid, LPVOID* ppvObj)
 {
@@ -125,6 +125,17 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 				combikeysW[1] = false;
 				pMouse->rgbButtons[1] = 0x00;
 			}
+
+
+			if (Dmousehilo[2] == true) {
+				pMouse->lZ = 120;
+				Dmousehilo[2] = false;
+			}
+			else if (Dmousehilo[3] == true) {
+				pMouse->lZ = -120;
+				Dmousehilo[3] = false;
+			}
+			else pMouse->lZ = 0;
 			LeaveCriticalSection(&deltaLock);
 			//pMouse->lX = 0;
 			//pMouse->lY = 0;
@@ -166,6 +177,17 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 				combikeysW[1] = false;
 				pMouse->rgbButtons[1] = 0x00;
 			}
+
+
+			if (Dmousehilo[2] == true) {
+				pMouse->lZ = 120;
+				Dmousehilo[2] = false;
+			}
+			else if (Dmousehilo[3] == true) {
+				pMouse->lZ = -120;
+				Dmousehilo[3] = false;
+			}
+			else pMouse->lZ = 0;
 			LeaveCriticalSection(&deltaLock);
 			//pMouse->lX = 0;
 			//pMouse->lY = 0;
@@ -185,7 +207,7 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 					pKeys[keytodinput[i]] &= ~0x80; //0 low?
 					//MessageBoxA(nullptr, "Setting A key low", "Warning", MB_OK | MB_ICONWARNING);
 				}
-			}
+			} //jump and parachute
 			if (pKeys[DIK_SPACE] == 0x80)
 			{
 				pKeys[DIK_9] = 0x80;
@@ -194,7 +216,87 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 				pKeys[DIK_9] = 0;
 			}
 
-			if (combikeysW[1])
+			//lshift and camera change common button
+			if (pKeys[DIK_C] == 0x80)
+			{
+				pKeys[DIK_LSHIFT] = 0x80;
+				combikeysW[0] = true;
+			}
+			else {
+				pKeys[DIK_LSHIFT] = 0;
+				combikeysW[0] = false;
+			}
+
+			if (combikeysW[0])
+			{
+				if (pKeys[keytodinput[8]] == 0x80)
+				{
+					pKeys[keytodinput[8]] = 0;
+					pKeys[DIK_F1] = 0x80;
+				}
+				else pKeys[DIK_F1] = 0;
+
+				if (pKeys[keytodinput[9]] == 0x80)
+				{
+					pKeys[keytodinput[9]] = 0;
+					pKeys[DIK_F2] = 0x80;
+				}
+				else pKeys[DIK_F2] = 0;
+
+				if (pKeys[keytodinput[10]] == 0x80)
+				{
+					pKeys[keytodinput[10]] = 0;
+					pKeys[DIK_F3] = 0x80;
+				}
+				else pKeys[DIK_F3] = 0;
+
+				if (pKeys[keytodinput[11]] == 0x80)
+				{
+					pKeys[keytodinput[11]] = 0;
+					pKeys[DIK_F4] = 0x80;
+				}
+				else pKeys[DIK_F4] = 0;
+
+				if (pKeys[keytodinput[0]] == 0x80)
+				{
+					pKeys[keytodinput[0]] = 0;
+					pKeys[DIK_F5] = 0x80;
+				}
+				else pKeys[DIK_F5] = 0;
+
+				if (pKeys[keytodinput[1]] == 0x80)
+				{
+					pKeys[keytodinput[1]] = 0;
+					pKeys[DIK_F6] = 0x80;
+				}
+				else pKeys[DIK_F6] = 0;
+
+				if (pKeys[keytodinput[2]] == 0x80)
+				{
+					pKeys[keytodinput[2]] = 0;
+					pKeys[DIK_F7] = 0x80;
+				}
+				else pKeys[DIK_F7] = 0;
+
+				if (pKeys[keytodinput[3]] == 0x80)
+				{
+					pKeys[keytodinput[3]] = 0;
+					pKeys[DIK_F8] = 0x80;
+				}
+				else pKeys[DIK_F8] = 0;
+			}
+			else {
+				pKeys[DIK_F1] = 0;
+				pKeys[DIK_F2] = 0;
+				pKeys[DIK_F3] = 0;
+				pKeys[DIK_F4] = 0;
+				pKeys[DIK_F5] = 0;
+				pKeys[DIK_F6] = 0;
+				pKeys[DIK_F7] = 0;
+				pKeys[DIK_F8] = 0;
+			}
+
+			if (combikeysW[1]) //aim button
 			{ //aim and pick up kits common button
 				pKeys[DIK_G] = 0x80;
 				//select weapons range 5-8
@@ -228,6 +330,10 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 			}
 			else {
 				pKeys[DIK_G] = 0;
+				pKeys[DIK_5] = 0;
+				pKeys[DIK_6] = 0;
+				pKeys[DIK_7] = 0;
+				pKeys[DIK_8] = 0;
 			}
 			//if (Dkeyhilo[0] == true)
 			//	pKeys[0x1E] |= 0x80; // Set high bit to indicate key is pressed

@@ -33,8 +33,10 @@ extern AddressLookupTable<void> ProxyAddressLookupTable;
 extern POINT delta;
 extern CRITICAL_SECTION deltaLock;
 extern bool Dmousehilo[4];
-extern bool Dkeyhilo[17];// byte[] keytodinput
-extern unsigned char keytodinput[17];
+extern bool DmouseDscroll;
+extern bool DmouseUscroll;
+extern bool Dkeyhilo[18];// byte[] keytodinput
+extern unsigned char keytodinput[18];
 
 //extern bool statehilo{ 8 }; //2: key hi or low 
 
