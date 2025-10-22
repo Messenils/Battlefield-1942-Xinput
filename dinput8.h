@@ -2,7 +2,7 @@
 
 #define INITGUID
 
-#define DIRECTINPUT_VERSION 0x0800
+#define DIRECTINPUT_VERSION 0x0820
 #include <dinput.h>
 
 class m_IDirectInput8A;

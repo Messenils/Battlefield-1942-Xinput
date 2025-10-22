@@ -101,8 +101,8 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 			DIMOUSESTATE* pMouse = reinterpret_cast<DIMOUSESTATE*>(lpvData);
 
 			// Example: scale movement by 50%
-			pMouse->lX = delta.x;
-			pMouse->lY = delta.y;
+			if (delta.x != 0) pMouse->lX = delta.x;
+			if (delta.y != 0) pMouse->lY = delta.y;
 
 			//if (Dmousehilo[0] == true) pMouse->rgbButtons[0] = 0x80;
 			//else pMouse->rgbButtons[0] = 0x00;
@@ -114,7 +114,6 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 				combikeysW[0] = true;
 			}
 			else {
-				pMouse->rgbButtons[0] = 0x00;
 				combikeysW[0] = false;
 			}
 			if (Dmousehilo[1] == true) {
@@ -123,7 +122,6 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 			}
 			else {
 				combikeysW[1] = false;
-				pMouse->rgbButtons[1] = 0x00;
 			}
 
 
@@ -135,7 +133,6 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 				pMouse->lZ = -120;
 				Dmousehilo[3] = false;
 			}
-			else pMouse->lZ = 0;
 			//pMouse->lX = 0;
 			//pMouse->lY = 0;
 			// Optional: clamp or remap values here if needed
@@ -151,8 +148,8 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 		else if (cbData == sizeof(DIMOUSESTATE2))
 		{
 			DIMOUSESTATE2* pMouse = reinterpret_cast<DIMOUSESTATE2*>(lpvData);
-			pMouse->lX = delta.x;
-			pMouse->lY = delta.y;
+			if (delta.x != 0) pMouse->lX = delta.x;
+			if (delta.y != 0) pMouse->lY = delta.y;
 
 			//if (Dmousehilo[0] == true) pMouse->rgbButtons[0] = 0x80;
 			//else pMouse->rgbButtons[0] = 0x00;
@@ -164,7 +161,6 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 				combikeysW[0] = true;
 			}
 			else {
-				pMouse->rgbButtons[0] = 0x00;
 				combikeysW[0] = false;
 			}
 			if (Dmousehilo[1] == true) {
@@ -173,7 +169,6 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 			}
 			else {
 				combikeysW[1] = false;
-				pMouse->rgbButtons[1] = 0x00;
 			}
 
 
@@ -185,7 +180,6 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 				pMouse->lZ = -120;
 				Dmousehilo[3] = false;
 			}
-			else pMouse->lZ = 0;
 			//pMouse->lX = 0;
 			//pMouse->lY = 0;
 			//ZeroMemory(lpvData, cbData);
@@ -200,17 +194,10 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 					pKeys[keytodinput[i]] |= 0x80; //80 high?
 					//MessageBoxA(nullptr, "Setting A key high", "Warning", MB_OK | MB_ICONWARNING);
 				}
-				if (Dkeyhilo[i] == false && keytodinput[i] != 0x00) {
-					pKeys[keytodinput[i]] &= ~0x80; //0 low?
-					//MessageBoxA(nullptr, "Setting A key low", "Warning", MB_OK | MB_ICONWARNING);
-				}
 			} //jump and parachute
 			if (pKeys[DIK_SPACE] == 0x80)
 			{
 				pKeys[DIK_9] = 0x80;
-			}
-			else {
-				pKeys[DIK_9] = 0;
 			}
 
 			//lshift and camera change common button
@@ -220,7 +207,6 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 				combikeysW[0] = true;
 			}
 			else {
-				pKeys[DIK_LSHIFT] = 0;
 				combikeysW[0] = false;
 			}
 
@@ -231,66 +217,48 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 					pKeys[keytodinput[8]] = 0;
 					pKeys[DIK_F1] = 0x80;
 				}
-				else pKeys[DIK_F1] = 0;
 
 				if (pKeys[keytodinput[9]] == 0x80)
 				{
 					pKeys[keytodinput[9]] = 0;
 					pKeys[DIK_F2] = 0x80;
 				}
-				else pKeys[DIK_F2] = 0;
 
 				if (pKeys[keytodinput[10]] == 0x80)
 				{
 					pKeys[keytodinput[10]] = 0;
 					pKeys[DIK_F3] = 0x80;
 				}
-				else pKeys[DIK_F3] = 0;
 
 				if (pKeys[keytodinput[11]] == 0x80)
 				{
 					pKeys[keytodinput[11]] = 0;
 					pKeys[DIK_F4] = 0x80;
 				}
-				else pKeys[DIK_F4] = 0;
 
 				if (pKeys[keytodinput[0]] == 0x80)
 				{
 					pKeys[keytodinput[0]] = 0;
 					pKeys[DIK_F5] = 0x80;
 				}
-				else pKeys[DIK_F5] = 0;
 
 				if (pKeys[keytodinput[1]] == 0x80)
 				{
 					pKeys[keytodinput[1]] = 0;
 					pKeys[DIK_F6] = 0x80;
 				}
-				else pKeys[DIK_F6] = 0;
 
 				if (pKeys[keytodinput[2]] == 0x80)
 				{
 					pKeys[keytodinput[2]] = 0;
 					pKeys[DIK_F7] = 0x80;
 				}
-				else pKeys[DIK_F7] = 0;
 
 				if (pKeys[keytodinput[3]] == 0x80)
 				{
 					pKeys[keytodinput[3]] = 0;
 					pKeys[DIK_F8] = 0x80;
 				}
-				else pKeys[DIK_F8] = 0;
-			}
-			else {
-				pKeys[DIK_F1] = 0;
-				pKeys[DIK_F2] = 0;
-				pKeys[DIK_F3] = 0;
-				pKeys[DIK_F4] = 0;
-				pKeys[DIK_F5] = 0;
-				pKeys[DIK_F6] = 0;
-				pKeys[DIK_F7] = 0;
-				pKeys[DIK_F8] = 0;
 			}
 
 			if (combikeysW[1]) //aim button
@@ -302,35 +270,24 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 					pKeys[DIK_1] = 0;
 					pKeys[DIK_5] = 0x80;
 				}
-				else pKeys[DIK_5] = 0;
 
 				if (pKeys[DIK_2] == 0x80)
 				{
 					pKeys[DIK_2] = 0;
 					pKeys[DIK_6] = 0x80;
 				}
-				else pKeys[DIK_6] = 0;
 
 				if (pKeys[DIK_3] == 0x80)
 				{
 					pKeys[DIK_3] = 0;
 					pKeys[DIK_7] = 0x80;
 				}
-				else pKeys[DIK_7] = 0;
 
 				if (pKeys[DIK_4] == 0x80)
 				{
 					pKeys[DIK_4] = 0;
 					pKeys[DIK_8] = 0x80;
 				}
-				else pKeys[DIK_8] = 0;
-			}
-			else {
-				pKeys[DIK_G] = 0;
-				pKeys[DIK_5] = 0;
-				pKeys[DIK_6] = 0;
-				pKeys[DIK_7] = 0;
-				pKeys[DIK_8] = 0;
 			}
 			//if (Dkeyhilo[0] == true)
 			//	pKeys[0x1E] |= 0x80; // Set high bit to indicate key is pressed

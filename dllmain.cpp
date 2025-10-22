@@ -2373,11 +2373,11 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         { 
                             vibrator += 10;
                         }
-                        vibrateController(0, vibrator);
+                        vibrateController(controllerID, vibrator);
                         if (!rightPressed)
                         {
                             vibrator = 0;
-                            vibrateController(0, vibrator);
+                            vibrateController(controllerID, vibrator);
                             if (userealmouse == 0)
                                 SendMouseClick(fakecursor.x, fakecursor.y, 4, 2);
                             else
