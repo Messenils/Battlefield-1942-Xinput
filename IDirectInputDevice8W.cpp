@@ -92,7 +92,7 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 
 	HRESULT hr = ProxyInterface->GetDeviceState(cbData, lpvData);
 	EnterCriticalSection(&deltaLock);
-	if (SUCCEEDED(hr) && lpvData && Xenabled)
+	if (SUCCEEDED(hr) && lpvData)
 	{
 		
 		// Check if this is a mouse device and the structure is the expected size
@@ -100,14 +100,8 @@ HRESULT m_IDirectInputDevice8W::GetDeviceState(DWORD cbData, LPVOID lpvData)
 		{
 			DIMOUSESTATE* pMouse = reinterpret_cast<DIMOUSESTATE*>(lpvData);
 
-			// Example: scale movement by 50%
 			if (delta.x != 0) pMouse->lX = delta.x;
 			if (delta.y != 0) pMouse->lY = delta.y;
-
-			//if (Dmousehilo[0] == true) pMouse->rgbButtons[0] = 0x80;
-			//else pMouse->rgbButtons[0] = 0x00;
-			//if (Dmousehilo[1] == true) pMouse->rgbButtons[1] = 0x80;
-			//else pMouse->rgbButtons[1] = 0x00;
 
 			if (Dmousehilo[0] == true) {
 				pMouse->rgbButtons[0] = 0x80;

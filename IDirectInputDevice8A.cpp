@@ -89,14 +89,13 @@ HRESULT m_IDirectInputDevice8A::GetDeviceState(DWORD cbData, LPVOID lpvData)
 {
 	HRESULT hr = ProxyInterface->GetDeviceState(cbData, lpvData);
 	EnterCriticalSection(&deltaLock);
-	if (SUCCEEDED(hr) && lpvData && Xenabled)
+	if (SUCCEEDED(hr) && lpvData)
 	{
 		
 		// Check if this is a mouse device and the structure is the expected size
 		if (cbData == sizeof(DIMOUSESTATE))
 		{
 			DIMOUSESTATE* pMouse = reinterpret_cast<DIMOUSESTATE*>(lpvData);
-			// Example: scale movement by 50%
 			
 			if (delta.x != 0) pMouse->lX = delta.x;
 			if (delta.y != 0) pMouse->lY = delta.y;
@@ -132,8 +131,6 @@ HRESULT m_IDirectInputDevice8A::GetDeviceState(DWORD cbData, LPVOID lpvData)
 		else if (cbData == sizeof(DIMOUSESTATE2))
 		{
 			DIMOUSESTATE2* pMouse = reinterpret_cast<DIMOUSESTATE2*>(lpvData);
-
-			// Same logic for extended mouse state
 			
 			if (delta.x != 0) pMouse->lX = delta.x;
 			if (delta.y != 0) pMouse->lY = delta.y;
@@ -185,9 +182,10 @@ HRESULT m_IDirectInputDevice8A::GetDeviceState(DWORD cbData, LPVOID lpvData)
 			}
 
 			//lshift and camera change common button
-			if (pKeys[DIK_C] == 0x80)
+			if (pKeys[keytodinput[4]] == 0x80)
 			{
 				pKeys[DIK_LSHIFT] = 0x80;
+				pKeys[DIK_C] = 0x80;
 				combikeys[0] = true;
 			}
 			else
