@@ -730,7 +730,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     int responsetime = GetPrivateProfileIntW(iniSettings.c_str(), L"Responsetime", 0, iniPath.c_str());
     int scrollenddelay = GetPrivateProfileIntW(iniSettings.c_str(), L"Scrolldelay", 60, iniPath.c_str()); //repost scroll weapon
     int MWdisabled = GetPrivateProfileIntW(iniSettings.c_str(), L"Disable_Mousewheel", 1, iniPath.c_str());
-    int altcrouch = GetPrivateProfileIntW(iniSettings.c_str(), L"Toggle_croutch", 1, iniPath.c_str()); 
+    int altcrouch = GetPrivateProfileIntW(iniSettings.c_str(), L"Toggle_croutch", 1, iniPath.c_str());
+    int warnings = GetPrivateProfileIntW(iniSettings.c_str(), L"Warnings", 1, iniPath.c_str());
     //clicknotmove 2
     //movenotclick 1
     Atype = GetPrivateProfileIntW(iniSettings.c_str(), L"A", 13, iniPath.c_str());
@@ -1444,7 +1445,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     }
                 ScreenToClient(hwnd, &fakecursor);
             } //no controller
-            else if (!disabled)
+            else if (!disabled && warnings == 1)
             {
                 char message[256];
                 sprintf(message, "Current ID: %d\nTRY AGAIN to retry ID\nCONTINUE to change ID\n\nCANCEL for automatic search", controllerID);
@@ -1468,11 +1469,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     {
 						if (controllerID < 4) controllerID++;  
 						else controllerID = 0;
-                        break;
-                    }
-                    default:
-                    {
-                        MessageBoxA(NULL, "Unexpected result.", "Error", MB_OK | MB_ICONERROR);
                         break;
                     }
                     }
