@@ -182,7 +182,7 @@ HRESULT m_IDirectInputDevice8A::GetDeviceState(DWORD cbData, LPVOID lpvData)
 			}
 
 			//lshift and camera change common button
-			if (pKeys[keytodinput[4]] == 0x80)
+			if (Dkeyhilo[7])
 			{
 				pKeys[DIK_LSHIFT] = 0x80;
 				pKeys[DIK_C] = 0x80;

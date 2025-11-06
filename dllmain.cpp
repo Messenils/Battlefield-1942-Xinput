@@ -35,7 +35,7 @@ POINT fakecursor;
 bool loop = true;  
 int counter = 0;
 
-int userealmouse = 0;
+//int userealmouse = 0;
 int atick = 0;
 
 
@@ -85,16 +85,6 @@ bool Dmousehilo[4];
 bool Dkeyhilo[18];// byte[] keytodinput
 unsigned char keytodinput[18] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
 
-
-COLORREF colors[5] = {
-    RGB(0, 0, 0),          // Transparent - won't be drawn
-    RGB(140, 140, 140),    // Gray for blade
-    RGB(255, 255, 255),    // White shine
-    RGB(139, 69, 19),       // Brown handle
-    RGB(50, 150, 255)     // Light blue accent
-
-};
-
 int tick = 0;
 HWND hwnd;
 //remember old keystates
@@ -121,6 +111,9 @@ bool olddown = false;
 bool oldleft = false;
 bool oldright = false;
 bool oldback = false;
+bool oldstart = false;
+bool holdnow = false;
+bool held = false;
 int startsearch = 0;
 int startsearchA = 0;
 int startsearchB = 0;
@@ -131,8 +124,7 @@ int startsearchD = 0;
 int startsearchE = 0;
 int startsearchF = 0;
 
-int righthanded = 0; //this will also disable dll if above 10
-
+int righthanded = 0;
 
 int Atype = 0;
 int Btype = 0;
@@ -156,12 +148,6 @@ int strideLarge, strideSmall;
 int smallW, smallH;
 
 int mode = 0;
-//int sovetid = 16;
-int knappsovetid = 100;
-
-int samekey = 0;
-int samekeyA = 0;
-
 
 std::ofstream Log::LOG("dinput8.log");
 AddressLookupTable<void> ProxyAddressLookupTable = AddressLookupTable<void>();
@@ -263,7 +249,6 @@ bool SendMouseClick(int x, int y, int z, int many)
 
         }
         return true;
-    
 }
 
 //hwnd for post message
@@ -592,8 +577,9 @@ void PostKeyFunction(HWND hwnd, int keytype, bool press) {
     return;
 
 }
+int crouchhold = 0;
 //int akkumulator = 0; 
-byte DIKcodes(int DIK) {
+byte DIKcodes(int DIK, int buttid) {
     //system keys
     if (DIK == 1) return DIK_ESCAPE;
     if (DIK == 2) return DIK_RETURN;
@@ -602,7 +588,11 @@ byte DIKcodes(int DIK) {
     if (DIK == 5) return DIK_RSHIFT;
     if (DIK == 6) return DIK_LSHIFT;
     if (DIK == 7) return DIK_LCONTROL;
-    if (DIK == 8) return DIK_LCONTROL;
+    if (DIK == 8) {
+        //buttonid to hold for crouch
+		crouchhold = buttid;
+        return DIK_LCONTROL;
+    }
     if (DIK == 9) return DIK_RCONTROL;
     if (DIK == 10) return DIK_LALT;
     if (DIK == 11) return DIK_LALT;
@@ -738,46 +728,47 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
 
     //mode
     int responsetime = GetPrivateProfileIntW(iniSettings.c_str(), L"Responsetime", 0, iniPath.c_str());
-    int scrollenddelay = GetPrivateProfileIntW(iniSettings.c_str(), L"Scrolldelay", 100, iniPath.c_str()); //repost scroll weapon
-
+    int scrollenddelay = GetPrivateProfileIntW(iniSettings.c_str(), L"Scrolldelay", 60, iniPath.c_str()); //repost scroll weapon
+    int MWdisabled = GetPrivateProfileIntW(iniSettings.c_str(), L"Disable_Mousewheel", 1, iniPath.c_str());
+    int altcrouch = GetPrivateProfileIntW(iniSettings.c_str(), L"Toggle_croutch", 1, iniPath.c_str()); 
     //clicknotmove 2
     //movenotclick 1
-    Atype = GetPrivateProfileIntW(iniSettings.c_str(), L"Ainputtype", 13, iniPath.c_str());
-    Btype = GetPrivateProfileIntW(iniSettings.c_str(), L"Binputtype", 50, iniPath.c_str());
-    Xtype = GetPrivateProfileIntW(iniSettings.c_str(), L"Xinputtype", 8, iniPath.c_str());
-    Ytype = GetPrivateProfileIntW(iniSettings.c_str(), L"Yinputtype", 29, iniPath.c_str());
-    Ctype = GetPrivateProfileIntW(iniSettings.c_str(), L"Cinputtype", 14, iniPath.c_str());
-    Dtype = GetPrivateProfileIntW(iniSettings.c_str(), L"Dinputtype", 15, iniPath.c_str());
-    Etype = GetPrivateProfileIntW(iniSettings.c_str(), L"Einputtype", 27, iniPath.c_str());
-    Ftype = GetPrivateProfileIntW(iniSettings.c_str(), L"Finputtype", 5, iniPath.c_str());
-    uptype = GetPrivateProfileIntW(iniSettings.c_str(), L"Upkey", 52, iniPath.c_str());
-    downtype = GetPrivateProfileIntW(iniSettings.c_str(), L"Downkey", 53, iniPath.c_str());
-    lefttype = GetPrivateProfileIntW(iniSettings.c_str(), L"Leftkey", 54, iniPath.c_str());
-    righttype = GetPrivateProfileIntW(iniSettings.c_str(), L"Rightkey", 55, iniPath.c_str());
-    starttype = GetPrivateProfileIntW(iniSettings.c_str(), L"Startkey", 2, iniPath.c_str());
-    backtype = GetPrivateProfileIntW(iniSettings.c_str(), L"Backkey", 1, iniPath.c_str());
+    Atype = GetPrivateProfileIntW(iniSettings.c_str(), L"A", 13, iniPath.c_str());
+    Btype = GetPrivateProfileIntW(iniSettings.c_str(), L"B", 50, iniPath.c_str());
+    Xtype = GetPrivateProfileIntW(iniSettings.c_str(), L"X", 8, iniPath.c_str());
+    Ytype = GetPrivateProfileIntW(iniSettings.c_str(), L"Y", 29, iniPath.c_str());
+    Ctype = GetPrivateProfileIntW(iniSettings.c_str(), L"Right_shoulder", 14, iniPath.c_str());
+    Dtype = GetPrivateProfileIntW(iniSettings.c_str(), L"Left_Shoulder", 15, iniPath.c_str());
+    Etype = GetPrivateProfileIntW(iniSettings.c_str(), L"Right_Thumb", 27, iniPath.c_str());
+    Ftype = GetPrivateProfileIntW(iniSettings.c_str(), L"Left_Thumb", 5, iniPath.c_str());
+    uptype = GetPrivateProfileIntW(iniSettings.c_str(), L"Up", 52, iniPath.c_str());
+    downtype = GetPrivateProfileIntW(iniSettings.c_str(), L"Down", 53, iniPath.c_str());
+    lefttype = GetPrivateProfileIntW(iniSettings.c_str(), L"Left", 54, iniPath.c_str());
+    righttype = GetPrivateProfileIntW(iniSettings.c_str(), L"Right", 55, iniPath.c_str());
+    starttype = GetPrivateProfileIntW(iniSettings.c_str(), L"Start", 2, iniPath.c_str());
+    backtype = GetPrivateProfileIntW(iniSettings.c_str(), L"Back", 1, iniPath.c_str());
 
     EnterCriticalSection(&deltaLock);
-    keytodinput[0] = DIKcodes(Atype);
-    keytodinput[1] = DIKcodes(Btype);
-    keytodinput[2] = DIKcodes(Xtype);
-    keytodinput[3] = DIKcodes(Ytype);
-    keytodinput[4] = DIKcodes(Etype);
-    keytodinput[5] = DIKcodes(Ftype);
-    keytodinput[6] = DIKcodes(Ctype);
-    keytodinput[7] = DIKcodes(Dtype);
-    keytodinput[8] = DIKcodes(uptype);
-    keytodinput[9] = DIKcodes(downtype);
-    keytodinput[10] = DIKcodes(lefttype);
-    keytodinput[11] = DIKcodes(righttype);
+    keytodinput[0] = DIKcodes(Atype, 0);
+    keytodinput[1] = DIKcodes(Btype, 1);
+    keytodinput[2] = DIKcodes(Xtype, 2);
+    keytodinput[3] = DIKcodes(Ytype, 3);
+    keytodinput[4] = DIKcodes(Etype, 4);
+    keytodinput[5] = DIKcodes(Ftype, 5);
+    keytodinput[6] = DIKcodes(Ctype, 6);
+    keytodinput[7] = DIKcodes(Dtype, 7);
+    keytodinput[8] = DIKcodes(uptype, 8);
+    keytodinput[9] = DIKcodes(downtype, 9);
+    keytodinput[10] = DIKcodes(lefttype, 10);
+    keytodinput[11] = DIKcodes(righttype, 11);
     //wasd
-    keytodinput[12] = DIKcodes(47);
-    keytodinput[13] = DIKcodes(43);
-    keytodinput[14] = DIKcodes(25);
-    keytodinput[15] = DIKcodes(28);
+    keytodinput[12] = DIKcodes(47, 12);
+    keytodinput[13] = DIKcodes(43, 13);
+    keytodinput[14] = DIKcodes(25, 14);
+    keytodinput[15] = DIKcodes(28, 15);
     //escape
-    keytodinput[16] = DIKcodes(starttype); //start
-    keytodinput[17] = DIKcodes(backtype); //back
+    keytodinput[16] = DIKcodes(starttype, 16); //start
+    keytodinput[17] = DIKcodes(backtype, 17); //back
     LeaveCriticalSection(&deltaLock);
 
     Sleep(1000);
@@ -788,12 +779,11 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     {
         MessageBoxA(NULL, "Warning. Settings file Xinput.ini not read. All settings standard. Or maybe ControllerID is missing from ini", "Error", MB_OK | MB_ICONERROR);
         controllerID = 0; //default controller  
-
     }
-    MessageBeep(MB_OK);
+    else MessageBeep(MB_ICONEXCLAMATION);
+    
     while (loop == true)
     {
-		
         bool movedmouse = false; //reset
         int calcsleep = 0;
         if (hwnd == NULL)
@@ -941,14 +931,16 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 {
                     if (buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER) //2
                     {
-                        // keep posting?
-                        atick++;
-                        if (atick > scrollenddelay)
-                        {
-                            EnterCriticalSection(&deltaLock);
-                            Dmousehilo[2] = true; //dinputdevice will clear
-                            LeaveCriticalSection(&deltaLock);
-                            atick = 0;
+                        if (MWdisabled == 0)
+                        { 
+                            atick++;
+                            if (atick > scrollenddelay)
+                            {
+                                EnterCriticalSection(&deltaLock);
+							    Dmousehilo[2] = true; //weapon scroll, dinputdevice will clear
+                                LeaveCriticalSection(&deltaLock);
+                                atick = 0;
+                            }
                         }
                     }
                     else {
@@ -968,6 +960,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     atick = 0;
                     EnterCriticalSection(&deltaLock);
                     Dkeyhilo[6] = true;
+					    if (MWdisabled == 0)
                     Dmousehilo[2] = true;
                     LeaveCriticalSection(&deltaLock);
                 }
@@ -979,14 +972,16 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     if (buttons & XINPUT_GAMEPAD_LEFT_SHOULDER) //3
                     {
                         // keep posting?
-                        // keep posting?
-                        atick++;
-                        if (atick > scrollenddelay)
+                        if (MWdisabled == 0)
                         {
-                            EnterCriticalSection(&deltaLock);
-                            Dmousehilo[3] = true; //dinputdevice will clear
-                            LeaveCriticalSection(&deltaLock);
-                            atick = 0;
+                            atick++;
+                            if (atick > scrollenddelay)
+                            {
+                                EnterCriticalSection(&deltaLock);
+                                Dmousehilo[3] = true; //weapon scroll dinputdevice will clear
+                                LeaveCriticalSection(&deltaLock);
+                                atick = 0;
+                            }
                         }
                     }
                     else {
@@ -1006,10 +1001,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     atick = 0;
                     EnterCriticalSection(&deltaLock);
                     Dkeyhilo[7] = true;
-                    Dmousehilo[3] = true;
+                    if (MWdisabled == 0)
+                        Dmousehilo[3] = true;
                     LeaveCriticalSection(&deltaLock);
                 }
-
 
 
 
@@ -1186,21 +1181,23 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     Dkeyhilo[17] = true;
                     LeaveCriticalSection(&deltaLock);
 				}
+                if (oldstart) {
 
-                if (buttons & XINPUT_GAMEPAD_START)
+                    if (buttons & XINPUT_GAMEPAD_START)
+                    {
+                    }
+                    else { //release
+                        oldstart = false;
+                        EnterCriticalSection(&deltaLock);
+                        Dkeyhilo[16] = false;
+                        LeaveCriticalSection(&deltaLock);
+					}
+                }
+                else if (buttons & XINPUT_GAMEPAD_START)
                 {
-                    Sleep(100);
+					oldstart = true;
                     EnterCriticalSection(&deltaLock);
                     Dkeyhilo[16] = true;
-                    LeaveCriticalSection(&deltaLock);
-                    
-                    // Sleep(1000); //have time to release button. this is no hurry anyway
-
-                }
-                else if (!(buttons & XINPUT_GAMEPAD_START) && Dkeyhilo[16] == true)
-                {
-                    EnterCriticalSection(&deltaLock);
-                    Dkeyhilo[16] = false;
                     LeaveCriticalSection(&deltaLock);
 				}
                     //sticks
@@ -1395,11 +1392,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         {
                             //start
                             rightPressedold = true;
-                            if (userealmouse == 0)
-                            {
-                                SendMouseClick(fakecursor.x, fakecursor.y, 3, 2); //4 skal vere 3
-
-                            }
+                            SendMouseClick(fakecursor.x, fakecursor.y, 3, 2); //4 skal vere 3
                         }
 
 
@@ -1419,6 +1412,36 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                             rightPressedold = false;
                         }
                     } //rightpress
+                    if (altcrouch == 1)
+                    { 
+                        EnterCriticalSection(&deltaLock);
+
+
+                        if (Dkeyhilo[crouchhold] == true && held == false)
+                        {
+                            held = true;
+                        }
+                        else if (held == true){
+                            if (Dkeyhilo[crouchhold] == false) //croutch button released
+                            { 
+                                held = false;
+
+                                if (holdnow) holdnow = false;
+                                else holdnow = true;
+                                if (holdnow)
+                                {
+                                    Dkeyhilo[crouchhold] = true;
+                                }
+                                else
+                                {
+                                    Dkeyhilo[crouchhold] = false;
+                                }
+
+
+                            }
+                        }
+                        LeaveCriticalSection(&deltaLock);
+                    }
                 ScreenToClient(hwnd, &fakecursor);
             } //no controller
             else if (!disabled)
@@ -1461,12 +1484,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                }
             
         } // no hwnd
-        if (knappsovetid > 20)
-        {
-            //  sovetid = 20;
-            //  knappsovetid = 100;
-
-        }
         //ticks for scroll end delay
         if (tick < scrollenddelay)
             tick++;
